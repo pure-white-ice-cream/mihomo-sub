@@ -16,12 +16,15 @@ jobs:
     steps:
     # 检出代码
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0    # 拉取完整历史
+        fetch-tags: true  # 显式拉取 tags
 
     # 设置镜像标签
     - name: Set IMAGE_TAG
       id: tag
       run: |
-        # 获取 Git SHA 短哈希（7位）
+        # 获取 Git SHA 7位短哈希
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
         
         # 获取当前日期

@@ -1,18 +1,18 @@
 FROM metacubex/mihomo:v1.19.15
 
-RUN apk add jq
-RUN apk add curl
+RUN apk add --no-cache jq curl
 
-ADD https://github.com/MetaCubeX/metacubexd/releases/download/v1.195.0/compressed-dist.tgz /root/metacubexd.tgz
-RUN mkdir -p /root/.config/mihomo/ui && tar -xzf /root/metacubexd.tgz -C /root/.config/mihomo/ui
-RUN rm -rf /root/metacubexd.tgz
+RUN wget -O /tmp/metacubexd.tgz https://github.com/MetaCubeX/metacubexd/releases/download/v1.195.0/compressed-dist.tgz && \
+    mkdir -p /root/.config/mihomo/ui && \
+    tar -xzf /tmp/metacubexd.tgz -C /root/.config/mihomo/ui && \
+    rm -rf /tmp/metacubexd.tgz
 
-ADD https://github.com/tindy2013/subconverter/releases/download/v0.9.0/subconverter_linux64.tar.gz /root/subconverter_linux64.tar.gz
-RUN tar -xzf /root/subconverter_linux64.tar.gz -C /
-RUN rm -rf /root/subconverter_linux64.tar.gz
+RUN wget -O /tmp/subconverter_linux64.tar.gz https://github.com/tindy2013/subconverter/releases/download/v0.9.0/subconverter_linux64.tar.gz && \
+    tar -xzf /tmp/subconverter_linux64.tar.gz -C / && \
+    rm -rf /tmp/subconverter_linux64.tar.gz
 
 # 15min    daily    hourly   monthly  weekly
-ADD sub.sh /etc/periodic/hourly/sub.sh
+COPY sub.sh /etc/periodic/hourly/sub.sh
 RUN chmod +x /etc/periodic/hourly/sub.sh
 
 RUN echo 'mixed-port: 7890' >> /root/.config/mihomo/config.yaml && \
@@ -20,8 +20,7 @@ RUN echo 'mixed-port: 7890' >> /root/.config/mihomo/config.yaml && \
     echo 'allow-lan: true' >> /root/.config/mihomo/config.yaml && \
     echo 'external-controller: :9090' >> /root/.config/mihomo/config.yaml
 
-EXPOSE 7890
-EXPOSE 9090
+EXPOSE 7890 9090
 
 # 创建启动脚本
 RUN echo '#!/bin/sh' > /mihomo_init.sh && \

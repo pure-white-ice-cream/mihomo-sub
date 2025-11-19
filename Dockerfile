@@ -16,6 +16,9 @@ RUN echo 'mixed-port: 7890' >> /root/.config/mihomo/config.yaml && \
     echo 'allow-lan: true' >> /root/.config/mihomo/config.yaml && \
     echo 'external-controller: :9090' >> /root/.config/mihomo/config.yaml
 
+ENV sub_url="" \
+config_url=""
+
 EXPOSE 7890 9090
 
 # 创建启动脚本

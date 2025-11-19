@@ -53,14 +53,24 @@ if [ -z "${sub_url}" ]; then
     exit 1
 fi
 
-encoded_url=$(jq -rn --arg x "${sub_url}" '$x|@uri' 2>/dev/null)
-if [ -z "${encoded_url}" ]; then
-    log="${log}Error❌️: URL 编码失败\n\t"
+encoded_sub_url=$(jq -rn --arg x "${sub_url}" '$x|@uri' 2>/dev/null)
+if [ -z "${encoded_sub_url}" ]; then
+    log="${log}Error❌️: 订阅文件 URL 编码失败\n\t"
     sub_end
 fi
 
+encoded_config_param=""
+if [ -n "${config_url}" ]; then
+    encoded_config_url=$(jq -rn --arg x "${config_url}" '$x|@uri' 2>/dev/null)
+    if [ -z "${encoded_config_url}" ]; then
+        log="${log}Error❌️: 配置文件 URL 编码失败\n\t"
+        sub_end
+    fi
+    encoded_config_param="&config=${encoded_config_url}"
+fi
+
 log="${log}[$(date +"%Y-%m-%d %H:%M:%S %z")] \n\t订阅文件更新...\n\t"
-sub_response=$(curl -s --max-time 15 -w "%{http_code}" -o /tmp/mihomo_temp.yml "http://127.0.0.1:25500/sub?target=clash&url=$encoded_url")
+sub_response=$(curl -s --max-time 15 -w "%{http_code}" -o /tmp/mihomo_temp.yml "http://127.0.0.1:25500/sub?target=clash&url=${encoded_sub_url}${encoded_config_param}")
 sub_exit_code=$?
 
 if [ "${sub_exit_code}" -ne 0 ]; then

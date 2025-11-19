@@ -2,9 +2,9 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "dev" ]
   workflow_dispatch:
 
 jobs:
@@ -43,6 +43,17 @@ jobs:
         echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
         echo "构建标签: ${IMAGE_TAG}"
 
+    # 判断是否需要 latest 标签
+    - name: Determine latest tag usage
+      run: |
+        if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+          echo "PUSH_LATEST=false" >> $GITHUB_ENV
+          echo "当前分支为 dev，跳过 latest 标签"
+        else
+          echo "PUSH_LATEST=true" >> $GITHUB_ENV
+          echo "当前分支非 dev，包含 latest 标签"
+        fi
+
     # 登录 Docker Hub
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
@@ -52,10 +63,17 @@ jobs:
 
     # 构建镜像
     - name: Build the Docker image
-      run: docker build -t purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} -t purewhiteicecream/mihomo-sub:latest .
+      run: |
+        if [ "${{ env.PUSH_LATEST }}" = "true" ]; then
+          docker build -t purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} -t purewhiteicecream/mihomo-sub:latest .
+        else
+          docker build -t purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} .
+        fi
 
     # 推送镜像
     - name: Push Docker image
       run: |
         docker push purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }}
-        docker push purewhiteicecream/mihomo-sub:latest
+        if [ "${{ env.PUSH_LATEST }}" = "true" ]; then
+          docker push purewhiteicecream/mihomo-sub:latest
+        fi

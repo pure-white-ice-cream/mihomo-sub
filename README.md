@@ -18,8 +18,6 @@ services:
   mihomo:
     image: purewhiteicecream/mihomo-sub:latest
     container_name: mihomo-sub
-    volumes:
-      - /opt/mihomo-sub:/root/.config/mihomo
     environment:
       - "TZ=Asia/Shanghai"
       - "sub_url=https://这里换成你的订阅地址"
@@ -35,3 +33,10 @@ services:
 ## 关键文件
 - `/root/.config/mihomo/config.yaml`: `mihomo` 核心的配置文件, 每小时自动更新
 - `/root/.config/mihomo/log.txt`: 每小时更新订阅的日志
+
+## 常见问题
+第一次部署的时候不要挂载卷到系统目录, 就像 `nginx` 一样
+```yaml
+    volumes:
+      - /opt/mihomo-sub:/root/.config/mihomo
+```

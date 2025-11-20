@@ -18,12 +18,18 @@ services:
   mihomo:
     image: purewhiteicecream/mihomo-sub:latest
     container_name: mihomo-sub
+    volumes:
+      - "config:/root/.config/mihomo"
     environment:
       - "TZ=Asia/Shanghai"
       - "sub_url=https://这里换成你的订阅地址"
+      # - "config_url=选填
     ports:
      - "7890:7890"
      - "9090:9090"
+
+volumes:
+  config:
 ```
 
 ## 服务端口

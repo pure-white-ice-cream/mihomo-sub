@@ -7,9 +7,22 @@ RUN wget -O /tmp/metacubexd.tgz https://github.com/MetaCubeX/metacubexd/releases
     tar -xzf /tmp/metacubexd.tgz -C /root/.config/mihomo/ui && \
     rm -rf /tmp/metacubexd.tgz
 
-RUN wget -O /tmp/subconverter_linux64.tar.gz https://github.com/tindy2013/subconverter/releases/download/v0.9.0/subconverter_linux64.tar.gz && \
-    tar -xzf /tmp/subconverter_linux64.tar.gz -C / && \
-    rm -rf /tmp/subconverter_linux64.tar.gz
+# 使用 buildx 自动传递的架构参数
+ARG TARGETARCH
+ARG TARGETVARIANT
+RUN case "${TARGETARCH}${TARGETVARIANT}" in \
+        "arm64") \
+            SUBCONV_FILE="subconverter_aarch64.tar.gz" ;; \
+        "armv7") \
+            SUBCONV_FILE="subconverter_armv7.tar.gz" ;; \
+        "386") \
+            SUBCONV_FILE="subconverter_linux32.tar.gz" ;; \
+        "amd64"|*) \
+            SUBCONV_FILE="subconverter_linux64.tar.gz" ;; \
+    esac && \
+    wget -O /tmp/subconverter.tar.gz https://github.com/tindy2013/subconverter/releases/download/v0.9.0/${SUBCONV_FILE} && \
+    tar -xzf /tmp/subconverter.tar.gz -C / && \
+    rm -rf /tmp/subconverter.tar.gz
 
 RUN echo 'mixed-port: 7890' >> /root/.config/mihomo/config.yaml && \
     echo 'external-ui: /root/.config/mihomo/ui' >> /root/.config/mihomo/config.yaml && \

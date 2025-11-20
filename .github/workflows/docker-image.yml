@@ -54,6 +54,14 @@ jobs:
           echo "当前分支非 dev，包含 latest 标签"
         fi
 
+    # 设置 QEMU（用于跨平台构建）
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    # 设置 Docker Buildx
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     # 登录 Docker Hub
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
@@ -61,19 +69,20 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-    # 构建镜像
-    - name: Build the Docker image
+    # 构建并推送多架构镜像
+    - name: Build and push multi-arch Docker image
       run: |
         if [ "${{ env.PUSH_LATEST }}" = "true" ]; then
-          docker build -t purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} -t purewhiteicecream/mihomo-sub:latest .
+          docker buildx build \
+            --platform linux/amd64,linux/arm64,linux/arm/v7,linux/386 \
+            --tag purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} \
+            --tag purewhiteicecream/mihomo-sub:latest \
+            --push \
+            .
         else
-          docker build -t purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} .
-        fi
-
-    # 推送镜像
-    - name: Push Docker image
-      run: |
-        docker push purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }}
-        if [ "${{ env.PUSH_LATEST }}" = "true" ]; then
-          docker push purewhiteicecream/mihomo-sub:latest
+          docker buildx build \
+            --platform linux/amd64,linux/arm64,linux/arm/v7,linux/386 \
+            --tag purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} \
+            --push \
+            .
         fi

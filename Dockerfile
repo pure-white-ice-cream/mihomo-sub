@@ -1,4 +1,4 @@
-FROM metacubex/mihomo:v1.19.17
+FROM metacubex/mihomo:v1.19.18
 
 RUN apk add --no-cache jq curl
 

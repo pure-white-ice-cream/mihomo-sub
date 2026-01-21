@@ -1,8 +1,8 @@
-FROM metacubex/mihomo:v1.19.18
+FROM metacubex/mihomo:v1.19.19
 
 RUN apk add --no-cache jq curl
 
-RUN wget -O /tmp/metacubexd.tgz https://github.com/MetaCubeX/metacubexd/releases/download/v1.195.0/compressed-dist.tgz && \
+RUN wget -O /tmp/metacubexd.tgz https://github.com/MetaCubeX/metacubexd/releases/download/v1.235.0/compressed-dist.tgz && \
     mkdir -p /root/.config/mihomo/ui && \
     tar -xzf /tmp/metacubexd.tgz -C /root/.config/mihomo/ui && \
     rm -rf /tmp/metacubexd.tgz
@@ -20,7 +20,7 @@ RUN case "${TARGETARCH}${TARGETVARIANT}" in \
         "amd64"|*) \
             SUBCONV_FILE="subconverter_linux64.tar.gz" ;; \
     esac && \
-    wget -O /tmp/subconverter.tar.gz https://github.com/tindy2013/subconverter/releases/download/v0.9.0/${SUBCONV_FILE} && \
+    wget -O /tmp/subconverter.tar.gz https://github.com/MetaCubeX/subconverter/releases/download/v0.9.2/${SUBCONV_FILE} && \
     tar -xzf /tmp/subconverter.tar.gz -C / && \
     rm -rf /tmp/subconverter.tar.gz
 

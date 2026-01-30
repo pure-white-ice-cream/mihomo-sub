@@ -1,6 +1,6 @@
 # mihomo-sub
 
-- `docker` 部署的 `mihomo` 核心, 每小时更新和转换订阅
+- `docker` 部署的 `mihomo` 核心，订阅更新频率由部署时传入的 cron 表达式控制
 
 ## 源码和仓库地址
 - 源码: `https://github.com/pure-white-ice-cream/mihomo-sub`
@@ -24,6 +24,8 @@ services:
       - "TZ=Asia/Shanghai"
       - "sub_url=https://这里换成你的订阅地址"
       # - "config_url=选填
+      # 定时更新订阅的 cron 表达式，默认 "0 * * * *" 表示每小时整点；例如 "*/15 * * * *" 表示每 15 分钟
+      # - "CRON_SCHEDULE=0 * * * *"
     ports:
      - "7890:7890"
      - "9090:9090"

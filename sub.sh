@@ -95,7 +95,7 @@ log="${log}订阅文件更新成功 ✅\n\t"
 # 配置重新加载
 # ---------------------------
 log="${log}配置重新加载...\n\t"
-reload_response=$(curl -s --max-time 15 -w "%{http_code}" -X PUT "http://127.0.0.1:9090/configs?force=true" -H "Content-Type: application/json" -d '{"path":"","payload":""}')
+reload_response=$(curl -s --max-time 15 -w "%{http_code}" -o /dev/null -X PUT "http://127.0.0.1:9090/configs?force=true" -H "Content-Type: application/json" -d '{"path":"","payload":""}')
 reload_exit_code=$?
 
 if [ "${reload_exit_code}" -ne 0 ]; then

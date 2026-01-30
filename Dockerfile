@@ -30,21 +30,13 @@ RUN echo 'mixed-port: 7890' >> /root/.config/mihomo/config.yaml && \
     echo 'external-controller: :9090' >> /root/.config/mihomo/config.yaml
 
 ENV sub_url="" \
-config_url=""
+config_url="" \
+cron=""
 
 EXPOSE 7890 9090
 
-# 创建启动脚本
-RUN echo '#!/bin/sh' > /mihomo_init.sh && \
-    echo '/mihomo &' >> /mihomo_init.sh && \
-    echo '/subconverter/subconverter &' >> /mihomo_init.sh && \
-    echo 'sleep 5' >> /mihomo_init.sh && \
-    echo '/etc/periodic/hourly/sub.sh' >> /mihomo_init.sh && \
-    echo 'exec crond -f -d 8' >> /mihomo_init.sh && \
-    chmod +x /mihomo_init.sh
-
-# 15min    daily    hourly   monthly  weekly
-COPY sub.sh /etc/periodic/hourly/sub.sh
-RUN chmod +x /etc/periodic/hourly/sub.sh
+COPY sub.sh /root/.config/mihomo/sub.sh
+COPY init.sh /mihomo_init.sh
+RUN chmod +x /root/.config/mihomo/sub.sh /mihomo_init.sh
 
 ENTRYPOINT ["/mihomo_init.sh"]

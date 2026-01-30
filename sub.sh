@@ -12,6 +12,7 @@ log=""        # 保存日志内容
 
 output="${output}mixed-port: 7890\n"
 output="${output}external-ui: /root/.config/mihomo/ui\n"
+output="${output}external-controller: :9090\n"
 
 # ---------------------------
 # 检查并安装依赖
@@ -81,9 +82,11 @@ elif [ "${sub_response}" -ne 200 ]; then
     sub_end
 fi
 
-# 去掉前两行写入 config
+# ---------------------------
+# 去掉与本地冲突后写入 config
+# ---------------------------
 if [ -f /tmp/mihomo_temp.yml ]; then
-    output="${output}$(awk 'NR>=3' /tmp/mihomo_temp.yml)\n"
+    output="${output}$(awk 'NR>=3 && !(/^[[:space:]]*mixed-port:/ || /^[[:space:]]*external-ui:/ || /^[[:space:]]*external-controller:/)' /tmp/mihomo_temp.yml)\n"
     printf "%b" "${output}" > "${CONFIG_FILE}"
 else
     log="${log}Error❌️: 临时文件不存在\n\t"
@@ -99,7 +102,7 @@ reload_response=$(curl -s --max-time 15 -w "%{http_code}" -o /dev/null -X PUT "h
 reload_exit_code=$?
 
 if [ "${reload_exit_code}" -ne 0 ]; then
-    log="${log}Error❌️: 网络错误，退出码: ${reload_exit_code}\n\t"
+    log="${log}Warning⚠️: mihomo 服务未启动( 第一次订阅出现此警告是正常现象 )，退出码: ${reload_exit_code}\n\t"
     sub_end
 elif [ "${reload_response}" -ne 204 ]; then
     log="${log}Error❌️: 配置重新加载失败，响应码: ${reload_response}\n\t"

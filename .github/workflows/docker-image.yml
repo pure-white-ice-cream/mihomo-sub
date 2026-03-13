@@ -2,87 +2,83 @@ name: Docker Image CI
 
 on:
   push:
+    # 监听分支推送
     branches: [ "main", "dev" ]
+    # 监听版本标签推送（如 v1.0.0），这是发布正式版本的常用方式
+    tags: [ 'v*.*.*' ]
   pull_request:
+    # PR 到 dev 分支时触发构建测试（但不推送镜像）
     branches: [ "dev" ]
+  # 支持手动点击运行
   workflow_dispatch:
 
+env:
+  # 定义镜像名称，方便统一修改
+  IMAGE_NAME: purewhiteicecream/mihomo-sub
+
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
+    # 设置权限，确保可以读取内容
+    permissions:
+      contents: read
 
     steps:
-    # 检出代码
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0    # 拉取完整历史
-        fetch-tags: true  # 显式拉取 tags
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # 设置镜像标签
-    - name: Set IMAGE_TAG
-      id: tag
-      run: |
-        # 获取 Git SHA 7位短哈希
-        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        
-        # 获取当前日期
-        BUILD_DATE=$(date +%Y%m%d)
-        
-        # 检查当前提交是否有 Git 标签
-        if git describe --tags --exact-match HEAD 2>/dev/null; then
-          # 如果有标签，直接使用标签（不加哈希）
-          GIT_TAG=$(git describe --tags --exact-match HEAD)
-          IMAGE_TAG="${GIT_TAG}"
-        else
-          # 如果没有标签，使用日期和 SHA 确保唯一性
-          IMAGE_TAG="${BUILD_DATE}-${SHORT_SHA}"
-        fi
-        
-        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
-        echo "构建标签: ${IMAGE_TAG}"
+      # 2. 核心优化：自动提取 Docker 元数据
+      # 这个插件会自动处理：Tag 推送、分支推送、SHA 生成、latest 逻辑
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            # 如果是 dev 分支，生成 tag 为 dev
+            type=ref,event=branch,branch=dev
+            # 如果是 main 分支，生成 tag 为 main 且作为 latest
+            type=ref,event=branch,branch=main
+            # 如果推送到 Git Tag (如 v1.2.3)，生成 1.2.3 的标签
+            type=semver,pattern={{version}}
+            # 无论什么情况，都生成一个 日期-简短SHA 的唯一标签
+            type=sha,prefix={{date 'YYYYMMDD'}}-
+            # 只有在 main 分支推送时，才给镜像打上 latest 标签
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-    # 判断是否需要 latest 标签
-    - name: Determine latest tag usage
-      run: |
-        if [ "${GITHUB_REF_NAME}" = "dev" ]; then
-          echo "PUSH_LATEST=false" >> $GITHUB_ENV
-          echo "当前分支为 dev，跳过 latest 标签"
-        else
-          echo "PUSH_LATEST=true" >> $GITHUB_ENV
-          echo "当前分支非 dev，包含 latest 标签"
-        fi
+      # 3. 设置 QEMU (支持跨平台模拟构建)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-    # 设置 QEMU（用于跨平台构建）
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      # 4. 设置 Docker Buildx (启用多架构构建功能)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    # 设置 Docker Buildx
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      # 5. 登录 Docker Hub (仅在非 PR 情况下执行推送登录)
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-    # 登录 Docker Hub
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
-    # 构建并推送多架构镜像
-    - name: Build and push multi-arch Docker image
-      run: |
-        if [ "${{ env.PUSH_LATEST }}" = "true" ]; then
-          docker buildx build \
-            --platform linux/amd64,linux/arm64,linux/arm/v7,linux/386 \
-            --tag purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} \
-            --tag purewhiteicecream/mihomo-sub:latest \
-            --push \
-            .
-        else
-          docker buildx build \
-            --platform linux/amd64,linux/arm64,linux/arm/v7,linux/386 \
-            --tag purewhiteicecream/mihomo-sub:${{ env.IMAGE_TAG }} \
-            --push \
-            .
-        fi
+      # 6. 构建并推送
+      # 使用官方插件替代 run 脚本，可以更好地利用 GitHub 的缓存后端
+      - name: Build and push multi-arch Docker image
+        uses: docker/build-push-action@v5
+        with:
+          # 构建上下文路径
+          context: .
+          # 指定目标架构
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/386
+          # 只有非 PR 且不是手动触发时才推送镜像，否则只做构建测试
+          push: ${{ github.event_name != 'pull_request' }}
+          # 直接引用 meta 步骤生成的全部标签
+          tags: ${{ steps.meta.outputs.tags }}
+          # 包含 meta 生成的 OCI 标准 Labels（如作者、源码地址等）
+          labels: ${{ steps.meta.outputs.labels }}
+          # --- 性能优化：启用 GitHub Actions 远程缓存 ---
+          # 第一次构建后，下次构建相同 Layer 时会直接从 GitHub 读取，不再重新下载/运行
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

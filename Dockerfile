@@ -1,4 +1,4 @@
-FROM metacubex/mihomo:v1.19.19
+FROM metacubex/mihomo:v1.19.21
 
 # 安装依赖
 RUN apk add --no-cache jq curl bash

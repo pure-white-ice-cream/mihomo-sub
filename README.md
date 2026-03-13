@@ -47,7 +47,7 @@ services:
       - sub_url=https://your-subscription-url.com
       # 可选：自定义配置文件的 URL
       # - config_url=https://your-custom-config-url.com
-      # 定时更新订阅的 cron 表达式，默认 "0 * * * *" 表示每小时整点；例如 "*/15 * * * *" 表示每 15 分钟
+      # 定时更新订阅的 cron 表达式，"0 * * * *" 表示每小时整点；例如 "*/15 * * * *" 表示每 15 分钟
       - cron=0 */1 * * *
     ports:
       - "7890:7890" # 代理 mixed 端口
@@ -65,7 +65,7 @@ volumes:
 | `TZ`         | 容器时区                                 | `Asia/Shanghai` | `America/New_York`                  |
 | `sub_url`    | 订阅链接，**必填**                       | 无          | `https://your-subscription-url.com` |
 | `config_url` | 自定义配置文件的 URL (可选)              | 无          | `https://your-custom-config-url.com`|
-| `cron`       | 定时更新订阅的 cron 表达式               | `0 * * * *` | `*/15 * * * *` (每15分钟)           |
+| `cron`       | 定时更新订阅的 cron 表达式 (可选)         | 无          | `*/15 * * * *` (每15分钟)           |
 
 ## 📂 文件结构
 

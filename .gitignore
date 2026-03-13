@@ -1,0 +1,38 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Trashes
+EhThumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+Dockerfile.bak
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.o
+*.a
+
+# Temp files
+*~

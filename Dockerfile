@@ -1,10 +1,10 @@
-FROM metacubex/mihomo:v1.19.21
+FROM metacubex/mihomo:v1.19.22
 
 # 安装依赖
 RUN apk add --no-cache jq curl bash
 
 # 安装 Metacubexd Web UI
-RUN wget -O /tmp/metacubexd.tgz https://github.com/MetaCubeX/metacubexd/releases/download/v1.235.0/compressed-dist.tgz && \
+RUN wget -O /tmp/metacubexd.tgz https://github.com/MetaCubeX/metacubexd/releases/download/v1.244.2/compressed-dist.tgz && \
     mkdir -p /root/.config/mihomo/ui && \
     tar -xzf /tmp/metacubexd.tgz -C /root/.config/mihomo/ui && \
     rm -rf /tmp/metacubexd.tgz

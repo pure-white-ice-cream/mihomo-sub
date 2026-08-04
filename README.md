@@ -1,10 +1,13 @@
 # Mihomo Subconverter Docker Image
 
 [![Docker Build and Publish](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml)
+[![Version](https://img.shields.io/docker/v/purewhiteicecream/mihomo-sub?sort=semver&label=version)](VERSION)
 [![License](https://img.shields.io/github/license/pure-white-ice-cream/mihomo-sub)](LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/purewhiteicecream/mihomo-sub)](https://hub.docker.com/r/purewhiteicecream/mihomo-sub)
 
 本项目提供了一个基于 Docker 的 `mihomo` 核心镜像，集成了 `subconverter` 和 `zashboard` Web 面板，支持定时更新订阅，旨在提供一个便捷、高效的代理服务部署方案。
+
+当前最新版本以仓库根目录 [`VERSION`](VERSION) 文件为准（徽章同步展示 Docker Hub 上已发布的最新语义化标签）。
 
 ## 🚀 特性
 
@@ -16,6 +19,16 @@
 - **自动化构建**: 通过 GitHub Actions 自动构建并推送至 Docker Hub。
 
 ## 📦 快速开始
+
+### Docker Pull
+
+```bash
+# 拉取最新版
+docker pull purewhiteicecream/mihomo-sub:latest
+
+# 或拉取指定版本（将 <version> 替换为 VERSION 文件中的版本号）
+docker pull purewhiteicecream/mihomo-sub:<version>
+```
 
 ### Docker Run
 

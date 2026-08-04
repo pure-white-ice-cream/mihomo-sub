@@ -4,8 +4,6 @@ on:
   push:
     # 监听分支推送
     branches: [ "main", "dev" ]
-    # 监听版本标签推送（如 v1.0.0），这是发布正式版本的常用方式
-    tags: [ 'v*.*.*' ]
   pull_request:
     # PR 到 dev 分支时触发构建测试（但不推送镜像）
     branches: [ "dev" ]
@@ -28,8 +26,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. 核心优化：自动提取 Docker 元数据
-      # 这个插件会自动处理：Tag 推送、分支推送、SHA 生成、latest 逻辑
+      # 2. 从 VERSION 文件读取镜像版本号
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          if [ -z "${VERSION}" ]; then
+            echo "VERSION file is empty" >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Using image version: ${VERSION}"
+
+      # 3. 核心优化：自动提取 Docker 元数据
+      # 这个插件会自动处理：分支推送、SHA 生成、latest 逻辑
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -38,24 +48,24 @@ jobs:
           tags: |
             # 如果是 dev 分支，生成 tag 为 dev
             type=ref,event=branch,branch=dev
-            # 如果是 main 分支，生成 tag 为 main 且作为 latest
+            # 如果是 main 分支，生成 tag 为 main
             type=ref,event=branch,branch=main
-            # 如果推送到 Git Tag (如 v1.2.3)，生成 1.2.3 的标签
-            type=semver,pattern={{version}}
+            # 从 VERSION 文件读取的语义化版本（仅 main 分支）
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref == 'refs/heads/main' }}
             # 无论什么情况，都生成一个 日期-简短SHA 的唯一标签
             type=sha,prefix={{date 'YYYYMMDD'}}-
             # 只有在 main 分支推送时，才给镜像打上 latest 标签
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      # 3. 设置 QEMU (支持跨平台模拟构建)
+      # 4. 设置 QEMU (支持跨平台模拟构建)
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # 4. 设置 Docker Buildx (启用多架构构建功能)
+      # 5. 设置 Docker Buildx (启用多架构构建功能)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 5. 登录 Docker Hub (仅在非 PR 情况下执行推送登录)
+      # 6. 登录 Docker Hub (仅在非 PR 情况下执行推送登录)
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -63,7 +73,7 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-      # 6. 构建并推送
+      # 7. 构建并推送
       # 使用官方插件替代 run 脚本，可以更好地利用 GitHub 的缓存后端
       - name: Build and push multi-arch Docker image
         uses: docker/build-push-action@v5
@@ -72,7 +82,7 @@ jobs:
           context: .
           # 指定目标架构
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/386
-          # 只有非 PR 且不是手动触发时才推送镜像，否则只做构建测试
+          # 只有非 PR 时才推送镜像，否则只做构建测试
           push: ${{ github.event_name != 'pull_request' }}
           # 直接引用 meta 步骤生成的全部标签
           tags: ${{ steps.meta.outputs.tags }}

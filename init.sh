@@ -26,7 +26,11 @@ fi
 # 等待服务就绪后执行一次订阅转换
 echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] [3/4] 等待服务就绪并执行首次订阅转换..."
 sleep 5
-"$SUB_SCRIPT" && echo "[$(date +"%Y-%m-%d %H:%M:%S %z")]       首次订阅转换完成" || echo "[$(date +"%Y-%m-%d %H:%M:%S %z")]       订阅转换执行完毕（请检查日志: $LOG_FILE）"
+if "$SUB_SCRIPT"; then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S %z")]       首次订阅转换完成"
+else
+	echo "[$(date +"%Y-%m-%d %H:%M:%S %z")]       首次订阅转换失败，请检查上方日志或 ${LOG_FILE}"
+fi
 
 # 前台运行 mihomo（容器主进程）
 echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] [4/4] 启动 Mihomo（前台运行，日志见下方）..."

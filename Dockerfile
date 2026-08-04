@@ -1,13 +1,14 @@
-FROM metacubex/mihomo:v1.19.22
+FROM metacubex/mihomo:v1.19.29
 
 # 安装依赖
-RUN apk add --no-cache jq curl bash
+RUN apk add --no-cache jq curl bash unzip
 
-# 安装 Metacubexd Web UI
-RUN wget -O /tmp/metacubexd.tgz https://github.com/MetaCubeX/metacubexd/releases/download/v1.244.2/compressed-dist.tgz && \
-    mkdir -p /root/.config/mihomo/ui && \
-    tar -xzf /tmp/metacubexd.tgz -C /root/.config/mihomo/ui && \
-    rm -rf /tmp/metacubexd.tgz
+# 安装 Zashboard Web UI
+RUN wget -O /tmp/zashboard.zip https://github.com/Zephyruso/zashboard/releases/download/v3.16.1/dist.zip && \
+    mkdir -p /tmp/zashboard /root/.config/mihomo/ui && \
+    unzip -q /tmp/zashboard.zip -d /tmp/zashboard && \
+    mv /tmp/zashboard/dist/* /root/.config/mihomo/ui/ && \
+    rm -rf /tmp/zashboard.zip /tmp/zashboard
 
 # 安装 Subconverter
 ARG TARGETARCH
@@ -29,6 +30,7 @@ RUN case "${TARGETARCH}${TARGETVARIANT}" in \
 # 写入默认配置
 RUN echo 'mixed-port: 7890' >> /root/.config/mihomo/config.yaml && \
     echo 'external-ui: /root/.config/mihomo/ui' >> /root/.config/mihomo/config.yaml && \
+    echo 'external-ui-url: "https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip"' >> /root/.config/mihomo/config.yaml && \
     echo 'allow-lan: true' >> /root/.config/mihomo/config.yaml && \
     echo 'external-controller: :9090' >> /root/.config/mihomo/config.yaml
 

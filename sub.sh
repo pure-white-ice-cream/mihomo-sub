@@ -16,6 +16,7 @@ log=""        # 保存日志内容
 # 使用真正的换行符，避免 printf %b 在某些环境下的兼容性问题
 output="mixed-port: 7890
 external-ui: /root/.config/mihomo/ui
+external-ui-url: \"https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip\"
 external-controller: :9090
 "
 
@@ -71,7 +72,7 @@ fi
 # ---------------------------
 if [ -f /tmp/mihomo_temp.yml ]; then
     # 修正 awk 内部引用，去掉多余的反斜杠
-    filtered_content=$(awk 'NR>=3 && !(/^[[:space:]]*mixed-port:/ || /^[[:space:]]*external-ui:/ || /^[[:space:]]*external-controller:/)' /tmp/mihomo_temp.yml)
+    filtered_content=$(awk 'NR>=3 && !(/^[[:space:]]*mixed-port:/ || /^[[:space:]]*external-ui:/ || /^[[:space:]]*external-ui-url:/ || /^[[:space:]]*external-controller:/)' /tmp/mihomo_temp.yml)
     output="${output}${filtered_content}\n"
     printf "%b" "${output}" > "${CONFIG_FILE}"
 else

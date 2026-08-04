@@ -4,13 +4,13 @@
 [![License](https://img.shields.io/github/license/pure-white-ice-cream/mihomo-sub)](LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/purewhiteicecream/mihomo-sub)](https://hub.docker.com/r/purewhiteicecream/mihomo-sub)
 
-本项目提供了一个基于 Docker 的 `mihomo` 核心镜像，集成了 `subconverter` 和 `metacubexd` Web 面板，支持定时更新订阅，旨在提供一个便捷、高效的代理服务部署方案。
+本项目提供了一个基于 Docker 的 `mihomo` 核心镜像，集成了 `subconverter` 和 `zashboard` Web 面板，支持定时更新订阅，旨在提供一个便捷、高效的代理服务部署方案。
 
 ## 🚀 特性
 
 - **核心组件**: 预装 `mihomo` 核心，提供强大的代理功能。
 - **订阅转换**: 内置 `subconverter`，支持多种订阅格式的转换，确保兼容性。
-- **Web 面板**: 集成 `metacubexd`，提供直观的图形用户界面，方便管理和监控。
+- **Web 面板**: 集成 `zashboard`，提供直观的图形用户界面，方便管理和监控。
 - **定时更新**: 支持通过 `cron` 表达式配置订阅自动更新，保持代理配置最新。
 - **多架构支持**: `linux/amd64`, `linux/arm64` 等多平台架构支持。
 - **自动化构建**: 通过 GitHub Actions 自动构建并推送至 Docker Hub。
@@ -71,7 +71,7 @@ volumes:
 
 - `/root/.config/mihomo/config.yaml`: `mihomo` 核心的配置文件，由 `sub.sh` 脚本自动生成和更新。
 - `/root/.config/mihomo/log.txt`: 订阅更新日志。
-- `/root/.config/mihomo/ui`: `metacubexd` Web 面板文件。
+- `/root/.config/mihomo/ui`: `zashboard` Web 面板文件。
 
 ## 🏷️ 标签说明
 

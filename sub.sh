@@ -6,6 +6,10 @@
 CONFIG_DIR="/root/.config/mihomo"
 CONFIG_FILE="${CONFIG_DIR}/config.yaml"
 LOG_FILE="${CONFIG_DIR}/log.txt"
+SUB_RAW_FILE="/tmp/sub_raw"
+SUB_CONFIG_FILE="/tmp/sub_config.ini"
+# 使用常见客户端 UA，避免被订阅站 / Cloudflare 拦截
+SUB_UA="clash.meta"
 
 # 确保目录存在
 mkdir -p "${CONFIG_DIR}"
@@ -37,33 +41,69 @@ if [ -z "${sub_url}" ]; then
     sub_end
 fi
 
-# 修正 jq 调用：不要在单引号里用 \'，直接用单引号包裹 jq 表达式
-encoded_sub_url=$(jq -rn --arg x "${sub_url}" '$x|@uri' 2>/dev/null)
-if [ -z "${encoded_sub_url}" ]; then
-    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 订阅文件 URL 编码失败\n"
+# 先由 curl 下载订阅，避免 Subconverter 自带 SubConverter-* 请求头被 Cloudflare 拦截
+log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] 下载订阅文件...\n"
+fetch_response=$(curl -sL --max-time 30 --noproxy '*' -A "${SUB_UA}" -w "%{http_code}" -o "${SUB_RAW_FILE}" "${sub_url}")
+fetch_exit_code=$?
+
+if [ "${fetch_exit_code}" -ne 0 ]; then
+    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 订阅下载网络错误，退出码: ${fetch_exit_code}\n"
+    sub_end
+elif [ "${fetch_response}" -ne 200 ]; then
+    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 订阅下载失败，响应码: ${fetch_response}\n"
+    sub_end
+elif [ ! -s "${SUB_RAW_FILE}" ]; then
+    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 订阅下载内容为空\n"
+    sub_end
+fi
+
+encoded_sub_path=$(jq -rn --arg x "${SUB_RAW_FILE}" '$x|@uri' 2>/dev/null)
+if [ -z "${encoded_sub_path}" ]; then
+    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 订阅文件路径编码失败\n"
     sub_end
 fi
 
 encoded_config_param=""
 if [ -n "${config_url}" ]; then
-    encoded_config_url=$(jq -rn --arg x "${config_url}" '$x|@uri' 2>/dev/null)
-    if [ -z "${encoded_config_url}" ]; then
-        log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 配置文件 URL 编码失败\n"
+    case "${config_url}" in
+        http://*|https://*)
+            log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] 下载自定义配置...\n"
+            config_response=$(curl -sL --max-time 30 --noproxy '*' -A "${SUB_UA}" -w "%{http_code}" -o "${SUB_CONFIG_FILE}" "${config_url}")
+            config_exit_code=$?
+            if [ "${config_exit_code}" -ne 0 ]; then
+                log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 配置下载网络错误，退出码: ${config_exit_code}\n"
+                sub_end
+            elif [ "${config_response}" -ne 200 ]; then
+                log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 配置下载失败，响应码: ${config_response}\n"
+                sub_end
+            elif [ ! -s "${SUB_CONFIG_FILE}" ]; then
+                log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 配置下载内容为空\n"
+                sub_end
+            fi
+            config_path="${SUB_CONFIG_FILE}"
+            ;;
+        *)
+            config_path="${config_url}"
+            ;;
+    esac
+    encoded_config_path=$(jq -rn --arg x "${config_path}" '$x|@uri' 2>/dev/null)
+    if [ -z "${encoded_config_path}" ]; then
+        log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 配置文件路径编码失败\n"
         sub_end
     fi
-    encoded_config_param="&config=${encoded_config_url}"
+    encoded_config_param="&config=${encoded_config_path}"
 fi
 
-log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] 订阅文件更新...\n"
-# 注意：curl 的输出直接捕获状态码
-sub_response=$(curl -s --max-time 15 -w "%{http_code}" -o /tmp/mihomo_temp.yml "http://127.0.0.1:25500/sub?target=clash&url=${encoded_sub_url}${encoded_config_param}")
+log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] 订阅文件转换...\n"
+# 将本地文件交给 Subconverter 转换，不再让它直接请求远程订阅
+sub_response=$(curl -s --max-time 30 -w "%{http_code}" -o /tmp/mihomo_temp.yml "http://127.0.0.1:25500/sub?target=clash&url=${encoded_sub_path}${encoded_config_param}")
 sub_exit_code=$?
 
 if [ "${sub_exit_code}" -ne 0 ]; then
-    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 网络错误，退出码: ${sub_exit_code}\n"
+    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 转换请求网络错误，退出码: ${sub_exit_code}\n"
     sub_end
 elif [ "${sub_response}" -ne 200 ]; then
-    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 订阅文件更新失败，响应码: ${sub_response}\n"
+    log="${log}[$(date +"%Y-%m-%d %H:%M:%S")] Error❌️: 订阅文件转换失败，响应码: ${sub_response}\n"
     sub_end
 fi
 

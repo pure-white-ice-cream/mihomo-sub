@@ -22,6 +22,16 @@
 - `purewhiteicecream/mihomo-sub`
 - `ghcr.io/pure-white-ice-cream/mihomo-sub`
 
+内置 **Mihomo v1.19.31**、**Zashboard v3.26.0**、Subconverter v0.9.2。
+
+## 3.0.0 破坏性变更
+
+从 2.x 升级请先看这些环境变量变化，再拉 `3.0.0` / `latest`：
+
+- 未设置 `SECRET` 时会**生成随机密钥**，面板不再默认无密码。局域网不要密码请显式 `SECRET: off`
+- 未设置 `cron` 时默认 **每天 4:00** 更新，不再省略定时任务。不定期更新（只在启动时拉一次）请 `cron: off`
+- 推荐改用命名卷 `data`，不要再绑 `./data`
+
 ## 适合谁 / 不适合谁
 
 **适合：** 有自己的订阅链接，想在 NAS、软路由或家用 Linux 上一容器跑起来；局域网设备走 mixed 端口；手机再导入同一套转换结果。

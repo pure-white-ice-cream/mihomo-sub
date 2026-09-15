@@ -1,4 +1,4 @@
-FROM metacubex/mihomo:v1.19.29
+FROM metacubex/mihomo:v1.19.31
 
 # 安装依赖
 RUN apk add --no-cache jq curl bash unzip
@@ -16,7 +16,7 @@ RUN case "${TARGETARCH}${TARGETVARIANT}" in \
     chmod +x /usr/local/bin/yq
 
 # 安装 Zashboard Web UI
-RUN wget -O /tmp/zashboard.zip https://github.com/Zephyruso/zashboard/releases/download/v3.16.1/dist.zip && \
+RUN wget -O /tmp/zashboard.zip https://github.com/Zephyruso/zashboard/releases/download/v3.26.0/dist.zip && \
     mkdir -p /tmp/zashboard /root/.config/mihomo/ui && \
     unzip -q /tmp/zashboard.zip -d /tmp/zashboard && \
     mv /tmp/zashboard/dist/* /root/.config/mihomo/ui/ && \

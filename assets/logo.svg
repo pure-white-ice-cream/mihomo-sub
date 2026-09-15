@@ -1,21 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="mihomo-sub">
   <title>mihomo-sub</title>
-  <rect x="4" y="4" width="120" height="120" rx="28" fill="#0B1F33"/>
-  <path fill="#2496ED" d="M82 84c12-18 32-16 36-6-10 4-20 8-28 10 10 2 20 8 28 16-4 6-24 4-36-10z"/>
-  <ellipse cx="52" cy="92" rx="36" ry="18" fill="#2496ED"/>
-  <ellipse cx="24" cy="88" rx="17" ry="15" fill="#2496ED"/>
-  <ellipse cx="42" cy="108" rx="12" ry="6" fill="#1A7FD4"/>
-  <circle cx="18" cy="84" r="3" fill="#0B1F33"/>
-  <circle cx="17" cy="83" r="1" fill="#F7FBFF"/>
-  <path fill="none" stroke="#0B1F33" stroke-width="2" stroke-linecap="round" d="M12 92q6 6 12 0"/>
-  <rect x="20" y="56" width="3" height="16" rx="1" fill="#7EC8F5"/>
-  <rect x="25" y="50" width="3" height="20" rx="1" fill="#7EC8F5"/>
-  <rect x="30" y="54" width="3" height="16" rx="1" fill="#7EC8F5"/>
-  <rect x="38" y="58" width="16" height="18" rx="2" fill="#F7FBFF"/>
-  <rect x="56" y="58" width="16" height="18" rx="2" fill="#F7FBFF"/>
-  <rect x="74" y="58" width="16" height="18" rx="2" fill="#F7FBFF"/>
-  <path fill="#D7EAF8" d="M41 64h10v2H41zm18 0h10v2H59zm18 0h10v2H77zM41 70h10v2H41zm18 0h10v2H59zm18 0h10v2H77z"/>
-  <polygon points="56,60 60,42 66,58" fill="#F7FBFF"/>
-  <polygon points="62,58 68,42 72,60" fill="#F7FBFF"/>
-  <path fill="none" stroke="#0B1F33" stroke-width="2" stroke-linejoin="miter" stroke-linecap="square" d="M59 72V62l5 6 5-6v10"/>
+  <rect width="128" height="128" rx="28" fill="#2496ED"/>
+  <path fill="#F7FBFF" d="M38 84c-16 2-26-8-18-26 2 14 12 24 22 24z"/>
+  <polygon points="42,46 52,14 62,46" fill="#F7FBFF"/>
+  <polygon points="66,46 76,14 86,46" fill="#F7FBFF"/>
+  <path fill="#F7FBFF" d="M40 46h48c3 0 6 3 6 8l-5 34c-2 8-14 12-25 12s-23-4-25-12l-5-34c0-5 3-8 6-8z"/>
+  <circle cx="54" cy="64" r="6" fill="#2496ED"/>
+  <circle cx="74" cy="64" r="6" fill="#2496ED"/>
+  <path fill="none" stroke="#2496ED" stroke-width="2.5" stroke-linecap="round" d="M58 76c2.5-2 5-2 7 0 2-2 4.5-2 7 0"/>
+  <rect x="41" y="104" width="10" height="9" rx="1.5" fill="#0B1F33"/>
+  <rect x="53" y="104" width="10" height="9" rx="1.5" fill="#0B1F33"/>
+  <rect x="65" y="104" width="10" height="9" rx="1.5" fill="#0B1F33"/>
+  <rect x="77" y="104" width="10" height="9" rx="1.5" fill="#0B1F33"/>
 </svg>

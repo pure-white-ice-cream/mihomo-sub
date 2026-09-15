@@ -1,0 +1,27 @@
+# 挂载为 /root/.config/mihomo/overlay.yaml
+# 订阅更新时会与转换结果深合并；不要在这里写 secret / mixed-port（由环境变量管理）
+#
+# rules-prepend / rules-append 会在合并后写入 rules 并删除这两个键
+# 避免直接覆盖整个 rules 数组
+
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver:
+    - 223.5.5.5
+    - 8.8.8.8
+
+# tun:
+#   enable: true
+#   stack: mixed
+#   auto-route: true
+#   auto-detect-interface: true
+#   dns-hijack:
+#     - any:53
+
+rules-prepend:
+  - DOMAIN-SUFFIX,local,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve

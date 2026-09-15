@@ -1,0 +1,34 @@
+# 软路由 / NAS 网关 TUN 模式（独立文件）
+# 准备 .env 与 overlay.yaml 后: docker compose -f docker-compose.tun.yml up -d
+
+services:
+  mihomo:
+    image: purewhiteicecream/mihomo-sub:latest
+    container_name: mihomo-sub
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      sub_url: ${sub_url}
+      cron: ${cron:-0 4 * * *}
+      SECRET: ${SECRET:-}
+      SUB_TOKEN: ${SUB_TOKEN:-}
+      ALLOW_LAN: ${ALLOW_LAN:-true}
+      MIXED_PORT: ${MIXED_PORT:-7890}
+      CONTROLLER_PORT: ${CONTROLLER_PORT:-9090}
+      config_url: ${config_url:-}
+      NOTIFY_WEBHOOK: ${NOTIFY_WEBHOOK:-}
+      SUB_UA: ${SUB_UA:-clash.meta}
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./data:/root/.config/mihomo
+      - ./overlay.yaml:/root/.config/mihomo/overlay.yaml:ro
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

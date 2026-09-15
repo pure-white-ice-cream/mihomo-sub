@@ -1,0 +1,11 @@
+.git
+.gitignore
+bin
+data
+.env
+.env.example
+deploy
+examples
+assets
+*.md
+LICENSE

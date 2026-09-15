@@ -24,8 +24,9 @@ EhThumbs.db
 Thumbs.db
 
 # Docker
-.dockerignore
 Dockerfile.bak
+.env
+data/
 
 # Binaries
 *.exe

@@ -1,0 +1,29 @@
+services:
+  mihomo:
+    image: purewhiteicecream/mihomo-sub:latest
+    container_name: mihomo-sub
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      sub_url: ${sub_url}
+      cron: ${cron:-0 4 * * *}
+      SECRET: ${SECRET:-}
+      SUB_TOKEN: ${SUB_TOKEN:-}
+      ALLOW_LAN: ${ALLOW_LAN:-true}
+      MIXED_PORT: ${MIXED_PORT:-7890}
+      CONTROLLER_PORT: ${CONTROLLER_PORT:-9090}
+      config_url: ${config_url:-}
+      NOTIFY_WEBHOOK: ${NOTIFY_WEBHOOK:-}
+      SUB_UA: ${SUB_UA:-clash.meta}
+    volumes:
+      - ./data:/root/.config/mihomo
+      # - ./overlay.yaml:/root/.config/mihomo/overlay.yaml:ro
+    ports:
+      - "7890:7890"
+      - "9090:9090"
+      # - "25500:25500"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

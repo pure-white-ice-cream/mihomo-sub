@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="mihomo-sub">
+  <title>mihomo-sub</title>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="#0B1F33"/>
+  <rect x="16" y="82" width="74" height="22" rx="11" fill="#2496ED"/>
+  <polygon points="86,88 114,76 114,110 86,100" fill="#2496ED"/>
+  <rect x="28" y="64" width="16" height="18" rx="2" fill="#F7FBFF"/>
+  <rect x="48" y="56" width="16" height="26" rx="2" fill="#7EC8F5"/>
+  <rect x="68" y="64" width="16" height="18" rx="2" fill="#F7FBFF"/>
+  <rect x="48" y="32" width="16" height="24" rx="3" fill="#F7FBFF"/>
+  <polygon points="48,36 52,18 58,34" fill="#F7FBFF"/>
+  <polygon points="54,34 60,18 64,36" fill="#F7FBFF"/>
+  <path fill="none" stroke="#0B1F33" stroke-width="2" stroke-linejoin="miter" stroke-linecap="square" d="M51 50V38l5 6 5-6v12"/>
+  <circle cx="26" cy="92" r="3" fill="#0B1F33"/>
+</svg>

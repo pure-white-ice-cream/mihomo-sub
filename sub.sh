@@ -18,9 +18,16 @@ ALLOW_LAN="${ALLOW_LAN:-true}"
 
 mkdir -p "${CONFIG_DIR}"
 
-if [ -z "${SECRET}" ] && [ -f "${SECRET_FILE}" ]; then
-  SECRET=$(tr -d '[:space:]' < "${SECRET_FILE}")
-fi
+case "${SECRET}" in
+  off|OFF|none|NONE|false|FALSE|disable|DISABLE|disabled|DISABLED)
+    SECRET=""
+    ;;
+  "")
+    if [ -f "${SECRET_FILE}" ]; then
+      SECRET=$(tr -d '[:space:]' < "${SECRET_FILE}")
+    fi
+    ;;
+esac
 if [ -z "${SUB_TOKEN}" ] && [ -f "${CONFIG_DIR}/.sub_token" ]; then
   SUB_TOKEN=$(tr -d '[:space:]' < "${CONFIG_DIR}/.sub_token")
 fi

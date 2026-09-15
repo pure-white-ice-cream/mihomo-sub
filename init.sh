@@ -37,19 +37,34 @@ esac
 export cron
 
 # ---------------------------
-# 持久化密钥：环境变量 > 数据卷 > 新生成
+# 持久化密钥：SECRET=off 关闭；否则 环境变量 > 数据卷 > 新生成
 # ---------------------------
-if [ -n "${SECRET}" ]; then
-  printf '%s' "${SECRET}" > "${SECRET_FILE}"
-elif [ -f "${SECRET_FILE}" ] && [ -s "${SECRET_FILE}" ]; then
-  SECRET=$(tr -d '[:space:]' < "${SECRET_FILE}")
-else
-  SECRET=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 24)
-  printf '%s' "${SECRET}" > "${SECRET_FILE}"
-  echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 未设置 SECRET，已生成随机密钥并写入数据卷"
-fi
+secret_label=""
+case "${SECRET}" in
+  off|OFF|none|NONE|false|FALSE|disable|DISABLE|disabled|DISABLED)
+    SECRET=""
+    : > "${SECRET_FILE}"
+    secret_label="未启用（面板无密钥）"
+    echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] SECRET=off，面板不设密钥。仅建议局域网使用"
+    ;;
+  "")
+    if [ -f "${SECRET_FILE}" ] && [ -s "${SECRET_FILE}" ]; then
+      SECRET=$(tr -d '[:space:]' < "${SECRET_FILE}")
+    else
+      SECRET=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 24)
+      printf '%s' "${SECRET}" > "${SECRET_FILE}"
+      echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 未设置 SECRET，已生成随机密钥并写入数据卷"
+    fi
+    ;;
+  *)
+    printf '%s' "${SECRET}" > "${SECRET_FILE}"
+    ;;
+esac
 chmod 600 "${SECRET_FILE}" 2>/dev/null || true
 export SECRET
+if [ -z "${secret_label}" ]; then
+  secret_label="${SECRET}"
+fi
 
 if [ -n "${SUB_TOKEN}" ]; then
   printf '%s' "${SUB_TOKEN}" > "${TOKEN_FILE}"
@@ -152,7 +167,7 @@ echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] [4/4] 启动 Mihomo（前台运行）...
 echo "=========================================="
 echo " 混合代理:  ${MIXED_PORT}"
 echo " Web 面板:  http://<主机IP>:${CONTROLLER_PORT}/ui"
-echo " API 密钥:  ${SECRET}"
+echo " API 密钥:  ${secret_label}"
 echo " 订阅令牌:  ${SUB_TOKEN}"
 echo " 家庭订阅:  http://<主机IP>:25500/getprofile?name=profiles/clash.ini&token=${SUB_TOKEN}"
 echo "            （需在 compose 中映射 25500，切勿直接暴露公网）"

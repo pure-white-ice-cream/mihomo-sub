@@ -9,6 +9,8 @@ services:
       TZ: Asia/Shanghai
       sub_url: https://your-subscription-url.com
       cron: "0 4 * * *"
+      # 局域网不想输密钥时改为 "off"
+      SECRET: change-me
       ALLOW_LAN: "true"
       MIXED_PORT: "7890"
       CONTROLLER_PORT: "9090"

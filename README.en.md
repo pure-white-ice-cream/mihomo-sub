@@ -34,19 +34,65 @@ The release version is [`VERSION`](VERSION). Images are published to Docker Hub 
 - Scheduled updates, with the last good config kept on failure
 - Multiple subscriptions in `sub_url` (separate with `|`)
 - `overlay.yaml` for DNS / rules / TUN that survive refreshes
-- Dashboard API secret (generated on first boot if unset)
+- Dashboard API secret (generated on first boot if unset; set `SECRET=off` to disable)
 - Optional LAN subscription endpoint (clash / surge / quanx / sing-box)
 - `linux/amd64` `linux/arm64` `linux/arm/v7` `linux/386`
 
 ## Quick start
 
+[`docker-compose.yml`](docker-compose.yml) is in the repo root. You can also paste the examples below.
+
+### Docker Compose (recommended, dashboard secret on)
+
+```yaml
+services:
+  mihomo:
+    image: purewhiteicecream/mihomo-sub:latest
+    container_name: mihomo-sub
+    environment:
+      TZ: Asia/Shanghai
+      sub_url: https://your-subscription-url.com
+      cron: "0 4 * * *"
+      SECRET: change-me
+    volumes:
+      - ./data:/root/.config/mihomo
+    ports:
+      - "7890:7890"
+      - "9090:9090"
+    restart: unless-stopped
+```
+
 ```bash
-cp .env.example .env
-# edit .env and set at least sub_url
 docker compose up -d
 ```
 
-Or:
+Open `http://<host-ip>:9090/ui` and enter `SECRET`.
+
+### Docker Compose (no dashboard secret)
+
+Use this only on a trusted LAN. Do not publish `9090` to the internet. With `SECRET=off` the dashboard opens without a password.
+
+```yaml
+services:
+  mihomo:
+    image: purewhiteicecream/mihomo-sub:latest
+    container_name: mihomo-sub
+    environment:
+      TZ: Asia/Shanghai
+      sub_url: https://your-subscription-url.com
+      cron: "0 4 * * *"
+      SECRET: "off"
+    volumes:
+      - ./data:/root/.config/mihomo
+    ports:
+      - "7890:7890"
+      - "9090:9090"
+    restart: unless-stopped
+```
+
+If the volume already has a `.secret` file, `off` clears it on the next start.
+
+### Docker Run
 
 ```bash
 docker run -d \
@@ -54,24 +100,19 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -e sub_url="https://your-subscription-url.com" \
   -e cron="0 4 * * *" \
+  -e SECRET=change-me \
   -p 7890:7890 \
   -p 9090:9090 \
   -v mihomo-data:/root/.config/mihomo \
   purewhiteicecream/mihomo-sub:latest
 ```
 
-If Docker Hub is slow, pull from GHCR:
-
-```bash
-docker pull ghcr.io/pure-white-ice-cream/mihomo-sub:latest
-```
-
-1Panel / CasaOS / Portainer can import [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml).
+For no secret, use `SECRET=off`. If Docker Hub is slow, switch the image to `ghcr.io/pure-white-ice-cream/mihomo-sub:latest`. 1Panel / CasaOS / Portainer can import [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml).
 
 ## After it starts
 
-1. Read the container logs for the **API secret** and **subscription token** (generated once, then stored on the volume).
-2. Open `http://<host-ip>:9090/ui` and enter the same secret.
+1. With a secret: copy it from the logs (generated on first boot if you did not set `SECRET`) and enter it at `http://<host-ip>:9090/ui`.
+2. With `SECRET=off`: open the dashboard, no password prompt.
 3. Point HTTP/SOCKS clients at `<host-ip>:7890`.
 4. Do not publish 7890, 9090, or 25500 to the public internet.
 
@@ -85,7 +126,7 @@ Refresh the subscription at most about once a day. Hourly updates are a common w
 | `sub_url` | Subscription URL(s), `|`-separated, **required** | none |
 | `config_url` | External Subconverter template | none |
 | `cron` | Schedule; `off` disables the timer | `0 4 * * *` |
-| `SECRET` | Dashboard / Clash API secret | random |
+| `SECRET` | Dashboard / Clash API secret; empty generates one; `off` disables it | random |
 | `ALLOW_LAN` | Allow LAN access to the proxy port | `true` |
 | `MIXED_PORT` | Mixed port | `7890` |
 | `CONTROLLER_PORT` | Dashboard port | `9090` |

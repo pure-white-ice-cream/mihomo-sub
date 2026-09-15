@@ -34,19 +34,65 @@
 - 定时更新订阅，失败保留上一份可用配置
 - 多订阅合并（`sub_url` 用 `|` 分隔）
 - `overlay.yaml` 保留自定义 DNS / 规则 / TUN
-- 面板 API 密钥（未设置则首次启动生成）
+- 面板 API 密钥（未设置则首次启动生成；`SECRET=off` 可关）
 - 可选家庭订阅出口（clash / surge / quanx / sing-box）
 - `linux/amd64` `linux/arm64` `linux/arm/v7` `linux/386`
 
 ## 快速开始
 
+仓库根目录已有 [`docker-compose.yml`](docker-compose.yml)。也可以直接复制下面的示例。
+
+### Docker Compose（推荐，面板带密钥）
+
+```yaml
+services:
+  mihomo:
+    image: purewhiteicecream/mihomo-sub:latest
+    container_name: mihomo-sub
+    environment:
+      TZ: Asia/Shanghai
+      sub_url: https://your-subscription-url.com
+      cron: "0 4 * * *"
+      SECRET: change-me
+    volumes:
+      - ./data:/root/.config/mihomo
+    ports:
+      - "7890:7890"   # mixed 代理
+      - "9090:9090"   # Web 面板
+    restart: unless-stopped
+```
+
 ```bash
-cp .env.example .env
-# 编辑 .env，至少填写 sub_url
 docker compose up -d
 ```
 
-或：
+打开 `http://<主机IP>:9090/ui`，在面板设置里填入 `SECRET`。
+
+### Docker Compose（面板无密钥）
+
+仅建议在局域网、不把 `9090` 映射到公网时使用。`SECRET=off` 后打开面板无需输入密钥。
+
+```yaml
+services:
+  mihomo:
+    image: purewhiteicecream/mihomo-sub:latest
+    container_name: mihomo-sub
+    environment:
+      TZ: Asia/Shanghai
+      sub_url: https://your-subscription-url.com
+      cron: "0 4 * * *"
+      SECRET: "off"
+    volumes:
+      - ./data:/root/.config/mihomo
+    ports:
+      - "7890:7890"
+      - "9090:9090"
+    restart: unless-stopped
+```
+
+若数据卷里已经有旧的 `.secret`，设为 `off` 后会清空，下次启动即无密钥。
+
+### Docker Run
 
 ```bash
 docker run -d \
@@ -54,24 +100,21 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -e sub_url="https://your-subscription-url.com" \
   -e cron="0 4 * * *" \
+  -e SECRET=change-me \
   -p 7890:7890 \
   -p 9090:9090 \
   -v mihomo-data:/root/.config/mihomo \
   purewhiteicecream/mihomo-sub:latest
 ```
 
-国内若拉 Docker Hub 不稳定，可改用：
+无密钥时把 `SECRET=change-me` 换成 `SECRET=off`。
 
-```bash
-docker pull ghcr.io/pure-white-ice-cream/mihomo-sub:latest
-```
-
-1Panel / CasaOS / Portainer 可导入 [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml)。
+国内若拉 Docker Hub 不稳定，把镜像名换成 `ghcr.io/pure-white-ice-cream/mihomo-sub:latest`。1Panel / CasaOS / Portainer 也可导入 [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml)。
 
 ## 启动后
 
-1. 看容器日志，记下 **API 密钥** 和 **订阅令牌**（未在 `.env` 里指定时由首次启动生成，之后写在数据卷里）。
-2. 打开面板：`http://<主机IP>:9090/ui`，在设置里填入同一密钥。
+1. 带密钥部署：看容器日志里的 **API 密钥**（未指定 `SECRET` 时首次启动会生成并写入数据卷），打开 `http://<主机IP>:9090/ui` 填入同一密钥。
+2. `SECRET=off`：直接打开面板即可，不用填密钥。
 3. 系统 / 浏览器代理填 `HTTP/SOCKS`：`<主机IP>:7890`。
 4. 不要把 7890、9090、25500 直接暴露到公网。
 
@@ -80,7 +123,7 @@ docker pull ghcr.io/pure-white-ice-cream/mihomo-sub:latest
 | 现象 | 处理 |
 | --- | --- |
 | 订阅 403 / 空内容 | 检查链接、更新间隔；默认每天 4:00，过频容易被封 |
-| 面板打不开 | 确认映射了 9090，并用日志里的密钥 |
+| 面板打不开 / 一直要密钥 | 确认映射了 9090；有密钥时填日志中的 `SECRET`；不想要密钥则设 `SECRET=off` |
 | 局域网连不上代理 | `ALLOW_LAN=true`（默认已是） |
 | 更新后自定义规则消失 | 把规则放到 `overlay.yaml` 再挂载 |
 
@@ -92,7 +135,7 @@ docker pull ghcr.io/pure-white-ice-cream/mihomo-sub:latest
 | `sub_url` | 订阅链接，多条用 `\|` 分隔，**必填** | 无 |
 | `config_url` | Subconverter 外部规则模板 | 无 |
 | `cron` | 更新计划；`off` 关闭定时 | `0 4 * * *` |
-| `SECRET` | 面板 / Clash API 密钥，留空则生成 | 随机 |
+| `SECRET` | 面板 / Clash API 密钥；留空则生成；`off` 关闭密钥 | 随机 |
 | `ALLOW_LAN` | 是否允许局域网访问代理端口 | `true` |
 | `MIXED_PORT` | mixed 端口 | `7890` |
 | `CONTROLLER_PORT` | 面板端口 | `9090` |

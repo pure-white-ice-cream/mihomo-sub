@@ -5,7 +5,9 @@ services:
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       sub_url: ${sub_url}
+      # 不定期更新（仅启动时拉取一次）改为 off
       cron: ${cron:-0 4 * * *}
+      # 局域网面板不要密码时改为 off，不要把 9090 暴露到公网
       SECRET: ${SECRET:-}
       SUB_TOKEN: ${SUB_TOKEN:-}
       ALLOW_LAN: ${ALLOW_LAN:-true}
@@ -15,8 +17,7 @@ services:
       NOTIFY_WEBHOOK: ${NOTIFY_WEBHOOK:-}
       SUB_UA: ${SUB_UA:-clash.meta}
     volumes:
-      - ./data:/root/.config/mihomo
-      # - ./overlay.yaml:/root/.config/mihomo/overlay.yaml:ro
+      - data:/root/.config/mihomo
     ports:
       - "7890:7890"
       - "9090:9090"
@@ -27,3 +28,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  data:

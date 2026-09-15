@@ -1,5 +1,6 @@
 # 软路由 / NAS 网关 TUN 模式（独立文件）
-# 准备 .env 与 overlay.yaml 后: docker compose -f docker-compose.tun.yml up -d
+# docker compose -f docker-compose.tun.yml up -d
+# overlay.yaml 请放入 data 卷，或取消下面绑定文件的注释
 
 services:
   mihomo:
@@ -8,7 +9,9 @@ services:
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       sub_url: ${sub_url}
+      # 不定期更新（仅启动时拉取一次）改为 off
       cron: ${cron:-0 4 * * *}
+      # 局域网面板不要密码时改为 off
       SECRET: ${SECRET:-}
       SUB_TOKEN: ${SUB_TOKEN:-}
       ALLOW_LAN: ${ALLOW_LAN:-true}
@@ -24,11 +27,14 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     volumes:
-      - ./data:/root/.config/mihomo
-      - ./overlay.yaml:/root/.config/mihomo/overlay.yaml:ro
+      - data:/root/.config/mihomo
+      # - ./overlay.yaml:/root/.config/mihomo/overlay.yaml:ro
     restart: unless-stopped
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  data:

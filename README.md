@@ -42,7 +42,7 @@
 
 仓库根目录已有 [`docker-compose.yml`](docker-compose.yml)。也可以直接复制下面的示例。
 
-### Docker Compose（推荐，面板带密钥）
+### Docker Compose
 
 ```yaml
 services:
@@ -52,14 +52,19 @@ services:
     environment:
       TZ: Asia/Shanghai
       sub_url: https://your-subscription-url.com
+      # 不定期更新（仅启动时拉取一次）改为 off
       cron: "0 4 * * *"
+      # 局域网面板不要密码时改为 off，不要把 9090 暴露到公网
       SECRET: change-me
     volumes:
-      - ./data:/root/.config/mihomo
+      - data:/root/.config/mihomo
     ports:
       - "7890:7890"   # mixed 代理
       - "9090:9090"   # Web 面板
     restart: unless-stopped
+
+volumes:
+  data:
 ```
 
 ```bash
@@ -67,30 +72,6 @@ docker compose up -d
 ```
 
 打开 `http://<主机IP>:9090/ui`，在面板设置里填入 `SECRET`。
-
-### Docker Compose（面板无密钥）
-
-仅建议在局域网、不把 `9090` 映射到公网时使用。`SECRET=off` 后打开面板无需输入密钥。
-
-```yaml
-services:
-  mihomo:
-    image: purewhiteicecream/mihomo-sub:latest
-    container_name: mihomo-sub
-    environment:
-      TZ: Asia/Shanghai
-      sub_url: https://your-subscription-url.com
-      cron: "0 4 * * *"
-      SECRET: "off"
-    volumes:
-      - ./data:/root/.config/mihomo
-    ports:
-      - "7890:7890"
-      - "9090:9090"
-    restart: unless-stopped
-```
-
-若数据卷里已经有旧的 `.secret`，设为 `off` 后会清空，下次启动即无密钥。
 
 ### Docker Run
 
@@ -106,8 +87,6 @@ docker run -d \
   -v mihomo-data:/root/.config/mihomo \
   purewhiteicecream/mihomo-sub:latest
 ```
-
-无密钥时把 `SECRET=change-me` 换成 `SECRET=off`。
 
 国内若拉 Docker Hub 不稳定，把镜像名换成 `ghcr.io/pure-white-ice-cream/mihomo-sub:latest`。1Panel / CasaOS / Portainer 也可导入 [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml)。
 
@@ -125,7 +104,7 @@ docker run -d \
 | 订阅 403 / 空内容 | 检查链接、更新间隔；默认每天 4:00，过频容易被封 |
 | 面板打不开 / 一直要密钥 | 确认映射了 9090；有密钥时填日志中的 `SECRET`；不想要密钥则设 `SECRET=off` |
 | 局域网连不上代理 | `ALLOW_LAN=true`（默认已是） |
-| 更新后自定义规则消失 | 把规则放到 `overlay.yaml` 再挂载 |
+| 更新后自定义规则消失 | 把规则放到命名卷里的 `overlay.yaml` |
 
 ## 环境变量
 
@@ -145,7 +124,7 @@ docker run -d \
 
 ## 自定义配置 overlay.yaml
 
-订阅每次都会重写 `config.yaml`。把长期有效的 DNS、TUN、额外规则放到数据卷中的 `overlay.yaml`（示例见 [`examples/overlay.yaml`](examples/overlay.yaml)）：
+订阅每次都会重写 `config.yaml`。把长期有效的 DNS、TUN、额外规则放到命名卷 `data` 里的 `overlay.yaml`（示例见 [`examples/overlay.yaml`](examples/overlay.yaml)）：
 
 ```yaml
 dns:

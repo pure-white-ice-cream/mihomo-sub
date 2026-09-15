@@ -40,9 +40,9 @@ The release version is [`VERSION`](VERSION). Images are published to Docker Hub 
 
 ## Quick start
 
-[`docker-compose.yml`](docker-compose.yml) is in the repo root. You can also paste the examples below.
+[`docker-compose.yml`](docker-compose.yml) is in the repo root. You can also paste the example below.
 
-### Docker Compose (recommended, dashboard secret on)
+### Docker Compose
 
 ```yaml
 services:
@@ -52,14 +52,19 @@ services:
     environment:
       TZ: Asia/Shanghai
       sub_url: https://your-subscription-url.com
+      # set to off to refresh only at startup (no schedule)
       cron: "0 4 * * *"
+      # set to off for an open dashboard on LAN; do not publish 9090
       SECRET: change-me
     volumes:
-      - ./data:/root/.config/mihomo
+      - data:/root/.config/mihomo
     ports:
       - "7890:7890"
       - "9090:9090"
     restart: unless-stopped
+
+volumes:
+  data:
 ```
 
 ```bash
@@ -67,30 +72,6 @@ docker compose up -d
 ```
 
 Open `http://<host-ip>:9090/ui` and enter `SECRET`.
-
-### Docker Compose (no dashboard secret)
-
-Use this only on a trusted LAN. Do not publish `9090` to the internet. With `SECRET=off` the dashboard opens without a password.
-
-```yaml
-services:
-  mihomo:
-    image: purewhiteicecream/mihomo-sub:latest
-    container_name: mihomo-sub
-    environment:
-      TZ: Asia/Shanghai
-      sub_url: https://your-subscription-url.com
-      cron: "0 4 * * *"
-      SECRET: "off"
-    volumes:
-      - ./data:/root/.config/mihomo
-    ports:
-      - "7890:7890"
-      - "9090:9090"
-    restart: unless-stopped
-```
-
-If the volume already has a `.secret` file, `off` clears it on the next start.
 
 ### Docker Run
 
@@ -107,7 +88,7 @@ docker run -d \
   purewhiteicecream/mihomo-sub:latest
 ```
 
-For no secret, use `SECRET=off`. If Docker Hub is slow, switch the image to `ghcr.io/pure-white-ice-cream/mihomo-sub:latest`. 1Panel / CasaOS / Portainer can import [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml).
+If Docker Hub is slow, switch the image to `ghcr.io/pure-white-ice-cream/mihomo-sub:latest`. 1Panel / CasaOS / Portainer can import [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml).
 
 ## After it starts
 
@@ -136,7 +117,7 @@ Refresh the subscription at most about once a day. Hourly updates are a common w
 
 ## overlay.yaml
 
-Each refresh rewrites `config.yaml`. Put durable DNS, TUN, and extra rules in `overlay.yaml` on the volume. See [`examples/overlay.yaml`](examples/overlay.yaml). Managed keys (`mixed-port`, `secret`, `external-controller`) always come from environment variables.
+Each refresh rewrites `config.yaml`. Put durable DNS, TUN, and extra rules in `overlay.yaml` on the named `data` volume. See [`examples/overlay.yaml`](examples/overlay.yaml). Managed keys (`mixed-port`, `secret`, `external-controller`) always come from environment variables.
 
 ## LAN converted profiles
 

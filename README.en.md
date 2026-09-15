@@ -22,6 +22,16 @@ The release version is [`VERSION`](VERSION). Images are published to Docker Hub 
 - `purewhiteicecream/mihomo-sub`
 - `ghcr.io/pure-white-ice-cream/mihomo-sub`
 
+Bundled versions: **Mihomo v1.19.31**, **Zashboard v3.26.0**, Subconverter v0.9.2.
+
+## Breaking changes in 3.0.0
+
+Read this before pulling `3.0.0` / `latest` from 2.x:
+
+- An unset `SECRET` now **generates a random password**. For an open LAN dashboard set `SECRET: off` explicitly
+- An unset `cron` now defaults to **04:00 daily**, instead of skipping the timer. For startup-only refresh set `cron: off`
+- Prefer the named volume `data` instead of binding `./data`
+
 ## Who this is for
 
 **For:** people who already have a subscription URL and want one container on a NAS, a home router, or a Linux box. LAN clients use the mixed port; phones can import the converted profile from the same host.

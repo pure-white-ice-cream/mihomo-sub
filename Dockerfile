@@ -1,7 +1,17 @@
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS overlay-builder
+ARG TARGETOS
+ARG TARGETARCH
+WORKDIR /src
+COPY overlay-js/go.mod overlay-js/go.sum ./
+RUN go mod download
+COPY overlay-js/main.go ./
+RUN CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" GOARM=7 \
+    go build -mod=readonly -trimpath -ldflags="-s -w" -o /mihomo-overlay-js .
+
 FROM metacubex/mihomo:v1.19.31
 
 # 安装依赖
-RUN apk add --no-cache jq curl bash unzip
+RUN apk add --no-cache jq curl bash unzip flock
 
 # 安装 yq，用于 overlay.yaml 合并
 ARG TARGETARCH
@@ -68,6 +78,7 @@ LABEL org.opencontainers.image.title="mihomo-sub" \
 COPY sub.sh /usr/local/bin/sub.sh
 COPY init.sh /usr/local/bin/init.sh
 COPY healthcheck.sh /usr/local/bin/healthcheck.sh
+COPY --from=overlay-builder /mihomo-overlay-js /usr/local/bin/mihomo-overlay-js
 RUN chmod +x /usr/local/bin/sub.sh /usr/local/bin/init.sh /usr/local/bin/healthcheck.sh
 
 HEALTHCHECK --interval=30s --timeout=8s --start-period=40s --retries=3 \

@@ -43,7 +43,7 @@
 - Mihomo 内核 + Subconverter + Zashboard
 - 定时更新订阅，失败保留上一份可用配置
 - 多订阅合并（`sub_url` 用 `|` 分隔）
-- `overlay.yaml` 保留自定义 DNS / 规则 / TUN
+- `overlay.yaml` 和 `overlay.js` 保留自定义 DNS / 规则 / TUN
 - 面板 API 密钥（未设置则首次启动生成；`SECRET=off` 可关）
 - 可选家庭订阅出口（clash / surge / quanx / sing-box）
 - `linux/amd64` `linux/arm64` `linux/arm/v7` `linux/386`
@@ -132,9 +132,11 @@ docker run -d \
 | `SUB_TOKEN` | 家庭订阅令牌，留空则生成 | 随机 |
 | `SUB_UA` | 拉取订阅时的 User-Agent | `clash.meta` |
 
-## 自定义配置 overlay.yaml
+## 进阶教程
 
-订阅每次都会重写 `config.yaml`。把长期有效的 DNS、TUN、额外规则放到命名卷 `data` 里的 `overlay.yaml`（示例见 [`examples/overlay.yaml`](examples/overlay.yaml)）：
+### 自定义配置 overlay.yaml
+
+订阅每次都会重写 `config.yaml`。把需要保留的 DNS、TUN 和额外规则写进数据卷里的 `overlay.yaml`。也可以把本地的 `.yml` 文件挂载到容器内的 `/root/.config/mihomo/overlay.yaml`。更多写法见 [`examples/overlay.yaml`](examples/overlay.yaml)。
 
 ```yaml
 dns:
@@ -144,7 +146,34 @@ rules-prepend:
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
 ```
 
-`mixed-port` / `secret` / `external-controller` 仍由环境变量管理，不会被 overlay 覆盖。
+同名映射按键合并，同名列表整段覆盖。用 `rules-prepend` 把新规则加到规则表前面，用 `rules-append` 加到末尾。订阅里有 `MATCH` 兜底规则时，用 `rules-prepend` 让新规则先匹配。
+
+### JavaScript 覆写 overlay.js
+
+从 3.1.0 起，可以用 `overlay.js` 按节点名筛选节点、调整策略组或修改规则。订阅转换后先合并 `overlay.yaml`，再把结果作为对象传给同步函数 `main(config)`。函数需要返回完整的配置对象。
+
+在 Compose 文件旁创建 `overlay.js`。下面的脚本会把一条直连规则放到规则表开头。
+
+```js
+function main(config) {
+  config.rules = ["DOMAIN-SUFFIX,example.com,DIRECT", ...(config.rules || [])]
+  return config
+}
+```
+
+保留原来的数据卷，在 `mihomo` 服务的 `volumes` 里加上脚本的只读挂载。
+
+```yaml
+    volumes:
+      - data:/root/.config/mihomo
+      - ./overlay.js:/root/.config/mihomo/overlay.js:ro
+```
+
+执行 `docker compose up -d` 应用挂载。脚本在每次订阅更新时运行，也可以用 `docker compose exec mihomo /usr/local/bin/sub.sh` 手动更新。
+
+只挂载你信任的本地脚本。执行环境提供 JavaScript 内置对象，订阅配置通过 `config` 传入，执行上限为 5 秒。面板密钥会从传入的对象中移除，容器在覆写后写回密钥、端口等受管字段。
+
+候选配置通过 Mihomo 校验后才会替换 `config.yaml`。脚本报错、超时、返回值无效或配置校验失败时，保留当前配置和 `config.yaml.good`，并记录到 `log.txt`。覆写只用于容器内运行的 Mihomo 配置。家庭订阅出口由 Subconverter 生成。
 
 ## 家庭订阅出口
 
@@ -175,7 +204,8 @@ docker compose -f docker-compose.tun.yml up -d
 | --- | --- |
 | `/root/.config/mihomo/config.yaml` | 当前运行配置 |
 | `/root/.config/mihomo/config.yaml.good` | 上一份转换成功的配置 |
-| `/root/.config/mihomo/overlay.yaml` | 用户覆盖层 |
+| `/root/.config/mihomo/overlay.yaml` | YAML 覆写 |
+| `/root/.config/mihomo/overlay.js` | JavaScript 覆写脚本 |
 | `/root/.config/mihomo/log.txt` | 订阅更新日志 |
 | `/root/.config/mihomo/ui` | Zashboard |
 | `/root/.config/mihomo/.secret` | 持久化 API 密钥 |

@@ -43,7 +43,7 @@ Read this before pulling `3.0.0` / `latest` from 2.x:
 - Mihomo + Subconverter + Zashboard
 - Scheduled updates, with the last good config kept on failure
 - Multiple subscriptions in `sub_url` (separate with `|`)
-- `overlay.yaml` for DNS / rules / TUN that survive refreshes
+- `overlay.yaml` and `overlay.js` for DNS / rules / TUN that survive refreshes
 - Dashboard API secret (generated on first boot if unset; set `SECRET=off` to disable)
 - Optional LAN subscription endpoint (clash / surge / quanx / sing-box)
 - `linux/amd64` `linux/arm64` `linux/arm/v7` `linux/386`
@@ -125,9 +125,17 @@ Refresh the subscription at most about once a day. Hourly updates are a common w
 | `SUB_TOKEN` | Token for LAN converted profiles | random |
 | `SUB_UA` | User-Agent used to fetch subscriptions | `clash.meta` |
 
-## overlay.yaml
+## Advanced usage
 
-Each refresh rewrites `config.yaml`. Put durable DNS, TUN, and extra rules in `overlay.yaml` on the named `data` volume. See [`examples/overlay.yaml`](examples/overlay.yaml). Managed keys (`mixed-port`, `secret`, `external-controller`) always come from environment variables.
+### overlay.yaml
+
+Each refresh rewrites `config.yaml`. Put durable DNS, TUN, and extra rules in `overlay.yaml` on the named `data` volume. Maps merge by key and lists replace the corresponding list. Use `rules-prepend` to insert rules before a catch-all rule such as `MATCH`. [YAML example](examples/overlay.yaml)
+
+### overlay.js
+
+Starting with 3.1.0, mount a trusted local script with `./overlay.js:/root/.config/mihomo/overlay.js:ro` in the service's `volumes`. On each refresh, the container applies `overlay.yaml` first, then calls the script's synchronous `main(config)` function. Return the full config object. [Example script and Compose setup](README.md#javascript-覆写-overlayjs)
+
+The script has a five-second limit. The container restores managed settings such as the ports and dashboard secret, then validates the result with Mihomo before replacing `config.yaml`. Script errors, timeouts, invalid returns, and validation failures keep the current config and its backup. The overlay applies to Mihomo inside the container. Subconverter generates the LAN profiles.
 
 ## LAN converted profiles
 

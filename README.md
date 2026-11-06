@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" width="96" height="96" alt="mihomo-sub">
+  <img src="assets/logo.svg" width="96" height="96" alt="mihomo-sub 折舱标志">
 </p>
 
 <h1 align="center">mihomo-sub</h1>
@@ -148,9 +148,11 @@ rules-prepend:
 
 同名映射按键合并，同名列表整段覆盖。用 `rules-prepend` 把新规则加到规则表前面，用 `rules-append` 加到末尾。订阅里有 `MATCH` 兜底规则时，用 `rules-prepend` 让新规则先匹配。
 
+<a name="overlay-js"></a>
+
 ### JavaScript 覆写 overlay.js
 
-从 3.1.0 起，可以用 `overlay.js` 按节点名筛选节点、调整策略组或修改规则。订阅转换后先合并 `overlay.yaml`，再把结果作为对象传给同步函数 `main(config)`。函数需要返回完整的配置对象。
+可以用 `overlay.js` 按节点名筛选节点、调整策略组或修改规则。订阅转换后先合并 `overlay.yaml`，再把结果作为对象传给同步函数 `main(config)`。函数需要返回完整的配置对象。
 
 在 Compose 文件旁创建 `overlay.js`。下面的脚本会把一条直连规则放到规则表开头。
 
@@ -223,4 +225,6 @@ docker compose -f docker-compose.tun.yml up -d
 
 ## 许可证
 
-[MIT License](LICENSE)。本仓库图标为原创几何图形，未使用 Docker / MetaCubeX 官方商标文件。
+[MIT License](LICENSE)
+
+项目标志「折舱」用两片货柜舱门拼成 mihomo-sub 的首字母 M。

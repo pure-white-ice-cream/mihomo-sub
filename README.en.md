@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" width="96" height="96" alt="mihomo-sub">
+  <img src="assets/logo.svg" width="96" height="96" alt="mihomo-sub Folded Hatch logo">
 </p>
 
 <h1 align="center">mihomo-sub</h1>
@@ -133,7 +133,7 @@ Each refresh rewrites `config.yaml`. Put durable DNS, TUN, and extra rules in `o
 
 ### overlay.js
 
-Starting with 3.1.0, mount a trusted local script with `./overlay.js:/root/.config/mihomo/overlay.js:ro` in the service's `volumes`. On each refresh, the container applies `overlay.yaml` first, then calls the script's synchronous `main(config)` function. Return the full config object. [Example script and Compose setup](README.md#javascript-覆写-overlayjs)
+Mount a trusted local script with `./overlay.js:/root/.config/mihomo/overlay.js:ro` in the service's `volumes`. On each refresh, the container applies `overlay.yaml` first, then calls the script's synchronous `main(config)` function. Return the full config object. [Example script and Compose setup](README.md#overlay-js)
 
 The script has a five-second limit. The container restores managed settings such as the ports and dashboard secret, then validates the result with Mihomo before replacing `config.yaml`. Script errors, timeouts, invalid returns, and validation failures keep the current config and its backup. The overlay applies to Mihomo inside the container. Subconverter generates the LAN profiles.
 
@@ -159,4 +159,6 @@ This uses host networking, `NET_ADMIN`, and `/dev/net/tun`. Misconfiguration can
 
 ## License
 
-[MIT License](LICENSE). The mark in `assets/logo.svg` is original geometry and does not copy Docker or MetaCubeX trademark artwork.
+[MIT License](LICENSE)
+
+The Folded Hatch logo pairs two cargo doors to form the M in mihomo-sub.

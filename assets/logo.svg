@@ -1,15 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="mihomo-sub">
-  <title>mihomo-sub</title>
-  <rect width="128" height="128" rx="28" fill="#2496ED"/>
-  <path fill="#F7FBFF" d="M38 84c-16 2-26-8-18-26 2 14 12 24 22 24z"/>
-  <polygon points="42,46 52,14 62,46" fill="#F7FBFF"/>
-  <polygon points="66,46 76,14 86,46" fill="#F7FBFF"/>
-  <path fill="#F7FBFF" d="M40 46h48c3 0 6 3 6 8l-5 34c-2 8-14 12-25 12s-23-4-25-12l-5-34c0-5 3-8 6-8z"/>
-  <circle cx="54" cy="64" r="6" fill="#2496ED"/>
-  <circle cx="74" cy="64" r="6" fill="#2496ED"/>
-  <path fill="none" stroke="#2496ED" stroke-width="2" stroke-linecap="round" d="M58 76c3-2 6-2 8 0 2-2 5-2 8 0"/>
-  <rect x="41" y="104" width="10" height="9" rx="1" fill="#0B1F33"/>
-  <rect x="53" y="104" width="10" height="9" rx="1" fill="#0B1F33"/>
-  <rect x="65" y="104" width="10" height="9" rx="1" fill="#0B1F33"/>
-  <rect x="77" y="104" width="10" height="9" rx="1" fill="#0B1F33"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="mihomo-sub 折舱">
+  <title>mihomo-sub · 折舱</title>
+  <rect width="128" height="128" rx="29" fill="#EFE5D5"/>
+  <path fill="#223848" d="M22 91V44l14-10 28 21 28-21 14 10v47l-16 11V56L64 77 38 56v46Z"/>
+  <path fill="#006E64" d="m64 55 28-21 14 10v47l-16 11V56L64 77Z"/>
 </svg>

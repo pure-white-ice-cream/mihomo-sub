@@ -13,6 +13,8 @@ SECRET_FILE="${CONFIG_DIR}/.secret"
 SUBCONV_DIR="/subconverter"
 SUB_UA="${SUB_UA:-clash.meta}"
 
+. /usr/local/lib/mihomo-sub/runtime-config.sh
+
 MIXED_PORT="${MIXED_PORT:-7890}"
 CONTROLLER_PORT="${CONTROLLER_PORT:-9090}"
 ALLOW_LAN="${ALLOW_LAN:-true}"
@@ -81,10 +83,18 @@ curl_direct() {
 }
 
 restore_good_config() {
-  if [ -f "${GOOD_FILE}" ]; then
+  if [ ! -s "${CONFIG_FILE}" ] && [ -s "${GOOD_FILE}" ]; then
     cp -f "${GOOD_FILE}" "${CONFIG_FILE}"
     log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] 已恢复上一份可用配置"
   fi
+}
+
+reload_config() {
+  curl --noproxy '*' -s --max-time 15 -w "%{http_code}" -o /dev/null -X PUT \
+    "http://127.0.0.1:${CONTROLLER_PORT}/configs?force=true" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${SECRET}" \
+    -d '{"path":"","payload":""}'
 }
 
 # ---------------------------
@@ -245,7 +255,7 @@ token_q=""
 if [ -n "${SUB_TOKEN}" ]; then
   token_q="&token=${SUB_TOKEN}"
 fi
-sub_response=$(curl -s --max-time 60 -w "%{http_code}" -o "${converted_file}" \
+sub_response=$(curl --noproxy '*' -s --max-time 60 -w "%{http_code}" -o "${converted_file}" \
   "http://127.0.0.1:25500/sub?target=clash&url=${encoded_urls}${encoded_config_param}${token_q}")
 sub_exit_code=$?
 
@@ -264,8 +274,8 @@ secret_esc=$(yaml_escape "${SECRET}")
 output="mixed-port: ${MIXED_PORT}
 allow-lan: ${ALLOW_LAN}
 bind-address: \"*\"
-external-ui: /root/.config/mihomo/ui
-external-ui-url: \"https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip\"
+external-ui: ${MIHOMO_UI_DIR}
+external-ui-url: \"${MIHOMO_UI_URL}\"
 external-controller: 0.0.0.0:${CONTROLLER_PORT}
 secret: \"${secret_esc}\"
 "
@@ -309,18 +319,7 @@ if [ "${script_enabled}" -eq 1 ]; then
 fi
 
 # 覆写完成后再次写入容器管理的字段。
-if command -v yq >/dev/null 2>&1; then
-  MIXED_PORT="${MIXED_PORT}" ALLOW_LAN="${ALLOW_LAN}" CONTROLLER_PORT="${CONTROLLER_PORT}" SECRET="${SECRET}" \
-    yq -i -e '
-      select(kind == "map") |
-      ."mixed-port" = env(MIXED_PORT) |
-      ."allow-lan" = env(ALLOW_LAN) |
-      ."bind-address" = "*" |
-      ."external-controller" = ("0.0.0.0:" + strenv(CONTROLLER_PORT)) |
-      .secret = strenv(SECRET) |
-      ."external-ui" = "/root/.config/mihomo/ui"
-    ' "${candidate_file}" || fail_config_update "写入受管字段失败"
-fi
+apply_runtime_fields "${candidate_file}" || fail_config_update "写入受管字段失败"
 
 if [ "${script_enabled}" -eq 1 ]; then
   /mihomo -t -d "${CONFIG_DIR}" -f "${candidate_file}" ||
@@ -328,6 +327,10 @@ if [ "${script_enabled}" -eq 1 ]; then
   log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] overlay.js 覆写通过配置校验"
 fi
 
+previous_file="${work_dir}/previous.yaml"
+if [ -s "${CONFIG_FILE}" ]; then
+  cp -p "${CONFIG_FILE}" "${previous_file}" || fail_config_update "保存当前配置失败"
+fi
 mv -f "${candidate_file}" "${CONFIG_FILE}" || fail_config_update "替换运行配置失败"
 log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] 订阅文件更新成功"
 
@@ -335,40 +338,20 @@ log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] 订阅文件更新成功"
 # 热重载；失败则回滚上一份可用配置
 # ---------------------------
 log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] 配置重新加载..."
-auth_header=""
-if [ -n "${SECRET}" ]; then
-  auth_header="Authorization: Bearer ${SECRET}"
-fi
-
-if [ -n "${auth_header}" ]; then
-  reload_response=$(curl -s --max-time 15 -w "%{http_code}" -o /dev/null -X PUT \
-    "http://127.0.0.1:${CONTROLLER_PORT}/configs?force=true" \
-    -H "Content-Type: application/json" \
-    -H "${auth_header}" \
-    -d '{"path":"","payload":""}')
-else
-  reload_response=$(curl -s --max-time 15 -w "%{http_code}" -o /dev/null -X PUT \
-    "http://127.0.0.1:${CONTROLLER_PORT}/configs?force=true" \
-    -H "Content-Type: application/json" \
-    -d '{"path":"","payload":""}')
-fi
+reload_response=$(reload_config)
 reload_exit_code=$?
 
 if [ "${reload_exit_code}" -ne 0 ]; then
   log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] Warning: mihomo 服务未启动，跳过热重载（启动后会读取新配置）"
   cp -f "${CONFIG_FILE}" "${GOOD_FILE}"
 elif [ "${reload_response}" -ne 204 ] && [ "${reload_response}" -ne 200 ]; then
+  exit_code=1
   log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] Warning: 配置重新加载失败，响应码 ${reload_response}，尝试回滚"
-  if [ -f "${GOOD_FILE}" ]; then
-    cp -f "${GOOD_FILE}" "${CONFIG_FILE}"
-    if [ -n "${auth_header}" ]; then
-      curl -s --max-time 15 -o /dev/null -X PUT \
-        "http://127.0.0.1:${CONTROLLER_PORT}/configs?force=true" \
-        -H "Content-Type: application/json" \
-        -H "${auth_header}" \
-        -d '{"path":"","payload":""}' >/dev/null 2>&1 || true
-    fi
+  if [ -s "${previous_file}" ] && mv -f "${previous_file}" "${CONFIG_FILE}"; then
+    reload_config >/dev/null 2>&1 || true
     notify "fail" "新配置热重载失败，已回滚"
+  else
+    notify "fail" "新配置热重载失败，无法恢复原配置"
   fi
 else
   log_msg "[$(date +"%Y-%m-%d %H:%M:%S")] 配置重新加载完成"

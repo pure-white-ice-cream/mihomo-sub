@@ -2,163 +2,140 @@
   <img src="assets/logo.svg" width="96" height="96" alt="mihomo-sub Folded Hatch logo">
 </p>
 
-<h1 align="center">mihomo-sub</h1>
+# mihomo-sub
 
-<p align="center">
-  A one-container Mihomo gateway for a NAS or home router: convert subscriptions, refresh them on a schedule, expose a web dashboard, and optionally serve converted profiles to other devices on your LAN.
-</p>
+Run an existing proxy subscription on your NAS or home router. The container bundles Mihomo, Zashboard, and Subconverter. It can refresh subscriptions on a schedule and serve converted profiles to other devices on your LAN.
 
-<p align="center">
-  <a href="README.md">简体中文</a>
-</p>
+[简体中文](README.md)
 
 [![Docker Build and Publish](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml)
 [![Version](https://img.shields.io/docker/v/purewhiteicecream/mihomo-sub?sort=semver&label=version)](VERSION)
 [![Docker Pulls](https://img.shields.io/docker/pulls/purewhiteicecream/mihomo-sub)](https://hub.docker.com/r/purewhiteicecream/mihomo-sub)
 [![License](https://img.shields.io/github/license/pure-white-ice-cream/mihomo-sub)](LICENSE)
 
-The release version is [`VERSION`](VERSION). Images are published to Docker Hub and GHCR:
-
-- `purewhiteicecream/mihomo-sub`
-- `ghcr.io/pure-white-ice-cream/mihomo-sub`
-
-Bundled versions: **Mihomo v1.19.31**, **Zashboard v3.26.0**, Subconverter v0.9.2.
-
-## Breaking changes in 3.0.0
-
-Read this before pulling `3.0.0` / `latest` from 2.x:
-
-- An unset `SECRET` now **generates a random password**. For an open LAN dashboard set `SECRET: off` explicitly
-- An unset `cron` now defaults to **04:00 daily**, instead of skipping the timer. For startup-only refresh set `cron: off`
-- Prefer the named volume `data` instead of binding `./data`
-
-## Who this is for
-
-**For:** people who already have a subscription URL and want one container on a NAS, a home router, or a Linux box. LAN clients use the mixed port; phones can import the converted profile from the same host.
-
-**Not for:** a public subscription site or public converter; publishing 7890/9090/25500 on the internet; redistributing someone else's nodes.
-
-## Features
-
-- Mihomo + Subconverter + Zashboard
-- Scheduled updates, with the last good config kept on failure
-- Multiple subscriptions in `sub_url` (separate with `|`)
-- `overlay.yaml` and `overlay.js` for DNS / rules / TUN that survive refreshes
-- Dashboard API secret (generated on first boot if unset; set `SECRET=off` to disable)
-- Optional LAN subscription endpoint (clash / surge / quanx / sing-box)
-- `linux/amd64` `linux/arm64` `linux/arm/v7` `linux/386`
+Includes Mihomo **v1.19.33**, Zashboard **v3.30.0** with system fonts, and Subconverter **v0.9.2**. Images are available for `linux/amd64`, `linux/arm64`, `linux/arm/v7`, and `linux/386`.
 
 ## Quick start
 
-[`docker-compose.yml`](docker-compose.yml) is in the repo root. You can also paste the example below.
-
 ### Docker Compose
 
-```yaml
-services:
-  mihomo:
-    image: purewhiteicecream/mihomo-sub:latest
-    container_name: mihomo-sub
-    environment:
-      TZ: Asia/Shanghai
-      sub_url: https://your-subscription-url.com
-      # set to off to refresh only at startup (no schedule)
-      cron: "0 4 * * *"
-      # set to off for an open dashboard on LAN; do not publish 9090
-      SECRET: change-me
-    volumes:
-      - data:/root/.config/mihomo
-    ports:
-      - "7890:7890"
-      - "9090:9090"
-    restart: unless-stopped
+1. Put [docker-compose.yml](docker-compose.yml) and [.env.example](.env.example) in the same directory.
+2. Copy `.env.example` to `.env` and set `sub_url` to your subscription URL. Use `|` between URLs if you have more than one.
+3. Run `docker compose up -d` in that directory.
+4. Open `http://<host-ip>:9090/ui/` and enter `SECRET`. If you left it blank, the container generates a secret. Find it with `docker compose logs mihomo`.
 
-volumes:
-  data:
-```
+Set your client's HTTP or SOCKS proxy to `<host-ip>:7890`. The dashboard starts first and the initial subscription refresh runs in the background. Check the container logs to see when the nodes are ready.
 
-```bash
-docker compose up -d
-```
-
-Open `http://<host-ip>:9090/ui` and enter `SECRET`.
+The Docker Hub image is `purewhiteicecream/mihomo-sub`. You can also use `ghcr.io/pure-white-ice-cream/mihomo-sub:latest` in Compose. For 1Panel, CasaOS, or Portainer, use the [stack example](deploy/portainer-stack.yml).
 
 ### Docker Run
 
 ```bash
-docker run -d \
-  --name mihomo-sub \
-  -e TZ=Asia/Shanghai \
-  -e sub_url="https://your-subscription-url.com" \
-  -e cron="0 4 * * *" \
-  -e SECRET=change-me \
+docker run -d --name mihomo-sub \
+  --restart unless-stopped \
+  -e sub_url='https://example.com/subscription' \
   -p 7890:7890 \
   -p 9090:9090 \
   -v mihomo-data:/root/.config/mihomo \
   purewhiteicecream/mihomo-sub:latest
 ```
 
-If Docker Hub is slow, switch the image to `ghcr.io/pure-white-ice-cream/mihomo-sub:latest`. 1Panel / CasaOS / Portainer can import [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml).
+Use `docker logs mihomo-sub` to find the generated dashboard secret. Restrict the proxy and controller ports to your LAN.
 
-## After it starts
+## Settings
 
-1. With a secret: copy it from the logs (generated on first boot if you did not set `SECRET`) and enter it at `http://<host-ip>:9090/ui`.
-2. With `SECRET=off`: open the dashboard, no password prompt.
-3. Point HTTP/SOCKS clients at `<host-ip>:7890`.
-4. Do not publish 7890, 9090, or 25500 to the public internet.
+Most setups only need `sub_url`. The Compose file passes these settings from `.env` to the container.
 
-Refresh the subscription at most about once a day. Hourly updates are a common way to get the upstream account banned.
+| Variable | Use |
+| --- | --- |
+| `sub_url` | Subscription URL. Separate multiple URLs with `\|` |
+| `SECRET` | Dashboard secret. Leave blank to generate and save one. Set `off` on a trusted LAN if you want open access |
+| `cron` | Refreshes daily at 04:00 by default. Set `off` for one refresh at each startup |
+| `TZ` | Time zone, defaults to `Asia/Shanghai` |
+| `ALLOW_LAN` | Allows LAN clients to use the proxy port, defaults to `true` |
+| `MIXED_PORT` / `CONTROLLER_PORT` | Proxy and dashboard ports inside the container, default to `7890` / `9090`. Check the Compose port mappings if you change them |
+| `config_url` | Optional external Subconverter rule template |
+| `SUB_UA` | User-Agent for subscription downloads, defaults to `clash.meta` |
+| `SUB_TOKEN` | LAN subscription access token. Leave blank to generate and save one |
+| `NOTIFY_WEBHOOK` | Sends a POST with `{"status","message"}` when an update fails |
 
-## Environment variables
-
-| Variable | Meaning | Default |
-| --- | --- | --- |
-| `TZ` | Timezone | `Asia/Shanghai` |
-| `sub_url` | Subscription URL(s), `|`-separated, **required** | none |
-| `config_url` | External Subconverter template | none |
-| `cron` | Schedule; `off` disables the timer | `0 4 * * *` |
-| `SECRET` | Dashboard / Clash API secret; empty generates one; `off` disables it | random |
-| `ALLOW_LAN` | Allow LAN access to the proxy port | `true` |
-| `MIXED_PORT` | Mixed port | `7890` |
-| `CONTROLLER_PORT` | Dashboard port | `9090` |
-| `NOTIFY_WEBHOOK` | POST `{"status","message"}` on failure | none |
-| `SUB_TOKEN` | Token for LAN converted profiles | random |
-| `SUB_UA` | User-Agent used to fetch subscriptions | `clash.meta` |
+Run `docker compose exec mihomo /usr/local/bin/sub.sh` to refresh now. A failed refresh keeps the current config. Look for the reason in the container logs or `log.txt` in the data volume.
 
 ## Advanced usage
 
+### Start offline
+
+On a machine with internet access, download the `.tar.gz` for your device from [GitHub Releases](https://github.com/pure-white-ice-cream/mihomo-sub/releases). The filename includes `linux-amd64`, `linux-arm64`, `linux-arm-v7`, or `linux-386`. On Linux, you can put `SHA256SUMS` from the same release next to the archive and run `sha256sum -c --ignore-missing SHA256SUMS` to verify the download.
+
+Copy the archive, `docker-compose.yml`, and your prepared `.env` to the target machine. This example loads the 3.1.2 archive for amd64. Use the filename you downloaded.
+
+```bash
+docker load -i mihomo-sub-3.1.2-linux-amd64.tar.gz
+```
+
+Docker restores the version tag from the archive. Set the Compose `image` to that tag, for example `purewhiteicecream/mihomo-sub:3.1.2`. Then start from the local image.
+
+```bash
+docker compose up -d --pull never
+```
+
+You can reuse the same archive on several devices. The target machine can stay disconnected from the internet while you load the image, start the container, and open the bundled `/ui/` from the LAN. A fresh volume uses your configured ports and `SECRET`. Nodes appear after the first successful refresh. An existing volume starts with its saved configuration.
+
 ### overlay.yaml
 
-Each refresh rewrites `config.yaml`. Put durable DNS, TUN, and extra rules in `overlay.yaml` on the named `data` volume. Maps merge by key and lists replace the corresponding list. Use `rules-prepend` to insert rules before a catch-all rule such as `MATCH`. [YAML example](examples/overlay.yaml)
+Subscription refreshes regenerate `config.yaml`. Put custom DNS, TUN, and rules in `overlay.yaml` in the data volume. You can also mount a local `.yml` file at `/root/.config/mihomo/overlay.yaml`. [YAML example](examples/overlay.yaml)
+
+Maps merge by key. Lists replace the corresponding list. Use `rules-prepend` to insert rules at the front or `rules-append` to put them at the end. A rule that must take precedence over `MATCH` belongs at the front.
 
 ### overlay.js
 
-Mount a trusted local script with `./overlay.js:/root/.config/mihomo/overlay.js:ro` in the service's `volumes`. On each refresh, the container applies `overlay.yaml` first, then calls the script's synchronous `main(config)` function. Return the full config object. [Example script and Compose setup](README.md#overlay-js)
+Use a script to filter nodes by name or adjust groups. The container applies `overlay.yaml` first, then calls your synchronous `main(config)`. Return the full config object.
 
-The script has a five-second limit. The container restores managed settings such as the ports and dashboard secret, then validates the result with Mihomo before replacing `config.yaml`. Script errors, timeouts, invalid returns, and validation failures keep the current config and its backup. The overlay applies to Mihomo inside the container. Subconverter generates the LAN profiles.
+This example puts a direct rule first.
 
-## LAN converted profiles
-
-Publish port 25500 on the LAN only, then import (replace the token from the logs):
-
+```js
+function main(config) {
+  config.rules = ["DOMAIN-SUFFIX,example.com,DIRECT", ...(config.rules || [])]
+  return config
+}
 ```
-http://<host-ip>:25500/getprofile?name=profiles/clash.ini&token=<SUB_TOKEN>
+
+Save the script beside the Compose file, add the following line to the `mihomo` service's `volumes`, and run `docker compose up -d`.
+
+```yaml
+      - ./overlay.js:/root/.config/mihomo/overlay.js:ro
 ```
 
-Targets: `clash.ini`, `surge.ini`, `quanx.ini`, `singbox.ini`. Use Tailscale or similar for remote access.
+Use a local script you trust. It runs in a separate environment and has five seconds to finish. The container removes the dashboard secret from the script input. It restores the ports and secret before Mihomo validates the result. Script errors, timeouts, and failed validation keep the current config and its backup.
 
-## TUN
+The overlays apply to Mihomo inside the container. Subconverter generates LAN profiles separately.
 
-For a home router that should take over all traffic, enable `tun` in `overlay.yaml` and start:
+### TUN
+
+To route traffic through a home router, enable `tun.enable` in `overlay.yaml` and start with the TUN Compose file.
 
 ```bash
 docker compose -f docker-compose.tun.yml up -d
 ```
 
-This uses host networking, `NET_ADMIN`, and `/dev/net/tun`. Misconfiguration can take the host offline.
+This uses host networking, `NET_ADMIN`, and `/dev/net/tun`. [TUN Compose](docker-compose.tun.yml)
+
+## Share profiles on the LAN
+
+Publish port `25500` on the LAN. Replace the host address and token below to import the converted Clash profile.
+
+```text
+http://<host-ip>:25500/getprofile?name=profiles/clash.ini&token=<SUB_TOKEN>
+```
+
+For other formats, use `surge.ini`, `quanx.ini`, or `singbox.ini`. The startup logs show the generated token.
+
+## Data and versions
+
+Keep the volume mounted at `/root/.config/mihomo` when you recreate the container. It holds the current `config.yaml`, the `config.yaml.good` backup, and the saved secret and token in `.secret` and `.sub_token`. The image supplies the dashboard files.
+
+Use `latest` to follow releases or pin an image version. Back up the data volume before an upgrade. The repository version is in [VERSION](VERSION). Build and release checks are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
 [MIT License](LICENSE)
-
-The Folded Hatch logo pairs two cargo doors to form the M in mihomo-sub.

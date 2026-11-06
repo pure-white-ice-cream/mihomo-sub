@@ -3,10 +3,14 @@
 
 SUB_SCRIPT="/usr/local/bin/sub.sh"
 CONFIG_DIR="/root/.config/mihomo"
+CONFIG_FILE="${CONFIG_DIR}/config.yaml"
+GOOD_FILE="${CONFIG_DIR}/config.yaml.good"
 LOG_FILE="${CONFIG_DIR}/log.txt"
 SECRET_FILE="${CONFIG_DIR}/.secret"
 TOKEN_FILE="${CONFIG_DIR}/.sub_token"
 SUBCONV_DIR="/subconverter"
+
+. /usr/local/lib/mihomo-sub/runtime-config.sh
 
 echo "=========================================="
 echo " Mihomo Sub 容器正在启动..."
@@ -78,6 +82,27 @@ fi
 chmod 600 "${TOKEN_FILE}" 2>/dev/null || true
 export SUB_TOKEN
 
+# 先准备本地配置。新卷即使拉不到订阅，也能按实际端口和密钥启动。
+startup_file=$(mktemp "${CONFIG_DIR}/.startup.XXXXXX") || exit 1
+prepare_startup_config() {
+  if [ ! -s "${CONFIG_FILE}" ] && [ ! -s "${GOOD_FILE}" ]; then
+    printf '{}\n' > "${startup_file}" && apply_runtime_fields "${startup_file}"
+    return $?
+  fi
+  for config_source in "${CONFIG_FILE}" "${GOOD_FILE}"; do
+    [ -s "${config_source}" ] || continue
+    if cp -f "${config_source}" "${startup_file}" && apply_runtime_fields "${startup_file}"; then
+      return 0
+    fi
+  done
+  return 1
+}
+if ! prepare_startup_config || ! mv -f "${startup_file}" "${CONFIG_FILE}"; then
+  rm -f "${startup_file}"
+  echo "Error: 无法准备 Mihomo 启动配置" >&2
+  exit 1
+fi
+
 # ---------------------------
 # 写入 subconverter 鉴权，避免 25500 被误映射后裸奔
 # ---------------------------
@@ -129,7 +154,7 @@ write_sub_profiles() {
 configure_subconverter
 write_sub_profiles
 
-echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] [1/4] 启动 Subconverter 服务..."
+echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 启动 Subconverter 服务..."
 /subconverter/subconverter >/dev/null 2>&1 &
 echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] Subconverter 已后台运行"
 
@@ -138,32 +163,43 @@ if [ "${cron_disabled}" -eq 1 ]; then
 else
   cron_label="${cron}"
 fi
-echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] [2/4] 配置定时任务 (cron: ${cron_label})..."
-if [ "${cron_disabled}" -eq 0 ]; then
-  echo "${cron} ${SUB_SCRIPT} >> ${LOG_FILE} 2>&1" > /etc/crontabs/root
-  crond -d 8 &
-  echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] crond 已后台运行，将按计划更新订阅"
-else
-  echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] cron 已关闭，跳过定时任务"
-fi
+run_subscription_jobs() {
+  # 等控制 API 可用再更新。cron=off 时也能把首次转换结果热重载进去。
+  i=0
+  while ! /usr/local/bin/healthcheck.sh; do
+    i=$((i + 1))
+    if [ "$i" -ge 60 ]; then
+      echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 等待 Mihomo 控制 API 超时，未执行首次订阅更新"
+      return 1
+    fi
+    sleep 1
+  done
 
-echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] [3/4] 等待 Subconverter 就绪并执行首次订阅转换..."
-i=0
-while [ "$i" -lt 15 ]; do
-  if curl -sf --max-time 2 "http://127.0.0.1:25500/version" >/dev/null 2>&1; then
-    break
+  if [ "${cron_disabled}" -eq 0 ]; then
+    echo "${cron} ${SUB_SCRIPT} >> ${LOG_FILE} 2>&1" > /etc/crontabs/root
+    crond -d 8 &
+    echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 已启动定时订阅更新"
   fi
-  i=$((i + 1))
-  sleep 1
-done
 
-if "${SUB_SCRIPT}"; then
-  echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 首次订阅转换完成"
-else
-  echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 首次订阅转换失败，将尝试使用已有配置启动。详见 ${LOG_FILE}"
-fi
+  i=0
+  while [ "$i" -lt 15 ]; do
+    if curl --noproxy '*' -sf --max-time 2 "http://127.0.0.1:25500/version" >/dev/null 2>&1; then
+      break
+    fi
+    i=$((i + 1))
+    sleep 1
+  done
 
-echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] [4/4] 启动 Mihomo（前台运行）..."
+  if "${SUB_SCRIPT}"; then
+    echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 首次订阅更新完成"
+  else
+    echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 首次订阅更新失败，保留当前配置。详见 ${LOG_FILE}"
+  fi
+}
+
+run_subscription_jobs &
+
+echo "[$(date +"%Y-%m-%d %H:%M:%S %z")] 启动 Mihomo..."
 echo "=========================================="
 echo " 混合代理:  ${MIXED_PORT}"
 echo " Web 面板:  http://<主机IP>:${CONTROLLER_PORT}/ui"

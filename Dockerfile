@@ -8,7 +8,7 @@ COPY overlay-js/main.go ./
 RUN CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" GOARM=7 \
     go build -mod=readonly -trimpath -ldflags="-s -w" -o /mihomo-overlay-js .
 
-FROM metacubex/mihomo:v1.19.31
+FROM metacubex/mihomo:v1.19.33
 
 # 安装依赖
 RUN apk add --no-cache jq curl bash unzip flock
@@ -25,11 +25,16 @@ RUN case "${TARGETARCH}${TARGETVARIANT}" in \
     wget -O /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v4.44.3/${YQ_BIN}" && \
     chmod +x /usr/local/bin/yq
 
-# 安装 Zashboard Web UI
-RUN wget -O /tmp/zashboard.zip https://github.com/Zephyruso/zashboard/releases/download/v3.26.0/dist.zip && \
-    mkdir -p /tmp/zashboard /root/.config/mihomo/ui && \
+# 面板放在数据卷外，容器重建后直接使用镜像内的版本。
+ARG ZASHBOARD_VERSION=v3.30.0
+ENV MIHOMO_UI_DIR=/usr/local/share/mihomo/ui \
+    MIHOMO_UI_URL=https://github.com/Zephyruso/zashboard/releases/download/${ZASHBOARD_VERSION}/dist-no-fonts.zip
+ENV SAFE_PATHS=${MIHOMO_UI_DIR}
+RUN wget -O /tmp/zashboard.zip "${MIHOMO_UI_URL}" && \
+    mkdir -p /tmp/zashboard "${MIHOMO_UI_DIR}" && \
     unzip -q /tmp/zashboard.zip -d /tmp/zashboard && \
-    mv /tmp/zashboard/dist/* /root/.config/mihomo/ui/ && \
+    mv /tmp/zashboard/dist/* "${MIHOMO_UI_DIR}/" && \
+    test -s "${MIHOMO_UI_DIR}/index.html" && \
     rm -rf /tmp/zashboard.zip /tmp/zashboard
 
 # 安装 Subconverter
@@ -46,15 +51,6 @@ RUN case "${TARGETARCH}${TARGETVARIANT}" in \
     wget -O /tmp/subconverter.tar.gz https://github.com/MetaCubeX/subconverter/releases/download/v0.9.2/${SUBCONV_FILE} && \
     tar -xzf /tmp/subconverter.tar.gz -C / && \
     rm -rf /tmp/subconverter.tar.gz
-
-# 写入最小默认配置（正式字段由 sub.sh 在启动时生成）
-RUN printf '%s\n' \
-    'mixed-port: 7890' \
-    'allow-lan: true' \
-    'external-ui: /root/.config/mihomo/ui' \
-    'external-ui-url: "https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip"' \
-    'external-controller: 0.0.0.0:9090' \
-    > /root/.config/mihomo/config.yaml
 
 ENV TZ=Asia/Shanghai \
     sub_url="" \
@@ -78,6 +74,7 @@ LABEL org.opencontainers.image.title="mihomo-sub" \
 COPY sub.sh /usr/local/bin/sub.sh
 COPY init.sh /usr/local/bin/init.sh
 COPY healthcheck.sh /usr/local/bin/healthcheck.sh
+COPY runtime-config.sh /usr/local/lib/mihomo-sub/runtime-config.sh
 COPY --from=overlay-builder /mihomo-overlay-js /usr/local/bin/mihomo-overlay-js
 RUN chmod +x /usr/local/bin/sub.sh /usr/local/bin/init.sh /usr/local/bin/healthcheck.sh
 

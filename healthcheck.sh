@@ -9,8 +9,8 @@ if [ -f "${CONFIG_DIR}/.secret" ]; then
 fi
 
 if [ -n "${SECRET}" ]; then
-  curl -fsS --max-time 5 -H "Authorization: Bearer ${SECRET}" \
+  curl --noproxy '*' -fsS --max-time 5 -H "Authorization: Bearer ${SECRET}" \
     "http://127.0.0.1:${PORT}/version" >/dev/null
 else
-  curl -fsS --max-time 5 "http://127.0.0.1:${PORT}/version" >/dev/null
+  curl --noproxy '*' -fsS --max-time 5 "http://127.0.0.1:${PORT}/version" >/dev/null
 fi

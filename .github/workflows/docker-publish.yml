@@ -10,10 +10,14 @@ on:
 env:
   HUB_IMAGE: purewhiteicecream/mihomo-sub
   GHCR_IMAGE: ghcr.io/pure-white-ice-cream/mihomo-sub
+  IMAGE_PLATFORMS: linux/amd64,linux/arm64,linux/arm/v7,linux/386
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      digest: ${{ steps.image.outputs.digest }}
     permissions:
       contents: read
       packages: write
@@ -69,12 +73,127 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push multi-arch Docker image
+        id: image
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/386
+          platforms: ${{ env.IMAGE_PLATFORMS }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  offline-release:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: offline-release-${{ needs.build.outputs.version }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export and publish offline images
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || ! "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Offline releases require a version in x.y.z format and a pushed image digest"
+            exit 1
+          fi
+
+          tag_ref="refs/tags/$RELEASE_VERSION"
+          tag_commit() {
+            git ls-remote origin "$tag_ref" "${tag_ref}^{}" |
+              awk '$2 ~ /\^\{\}$/ { peeled = $1; next } { sha = $1 } END { print peeled ? peeled : sha }'
+          }
+
+          commit=$(tag_commit)
+          if [[ -n "$commit" && "$commit" != "$GITHUB_SHA" ]]; then
+            echo "::notice::Tag $RELEASE_VERSION belongs to $commit. Skipping the offline release for $GITHUB_SHA."
+            exit 0
+          fi
+
+          IFS=',' read -r -a platforms <<< "$IMAGE_PLATFORMS"
+          archives=()
+          for platform in "${platforms[@]}"; do
+            archives+=("mihomo-sub-${RELEASE_VERSION}-${platform//\//-}.tar.gz")
+          done
+          assets=("${archives[@]}" SHA256SUMS)
+
+          if release=$(gh release view "$RELEASE_VERSION" --json isDraft,assets 2>/dev/null) &&
+             jq -e '.isDraft == false' <<< "$release" >/dev/null; then
+            if [[ "$commit" != "$GITHUB_SHA" ]]; then
+              echo "::error::Published release $RELEASE_VERSION is missing its Git tag"
+              exit 1
+            fi
+            for asset in "${assets[@]}"; do
+              if ! jq -e --arg name "$asset" 'any(.assets[]; .name == $name and .state == "uploaded" and .size > 0)' <<< "$release" >/dev/null; then
+                echo "::error::Published release $RELEASE_VERSION is missing $asset. Publish the complete set through a draft release."
+                exit 1
+              fi
+            done
+            echo "Offline images for $RELEASE_VERSION are already published."
+            exit 0
+          fi
+
+          output=$(mktemp -d)
+          source="${GHCR_IMAGE}@${IMAGE_DIGEST}"
+          image="${HUB_IMAGE}:${RELEASE_VERSION}"
+          for index in "${!platforms[@]}"; do
+            platform="${platforms[$index]}"
+            archive="$output/${archives[$index]}"
+            docker pull --platform "$platform" "$source"
+            docker image tag "$source" "$image"
+            docker image save --platform "$platform" "$image" | gzip -n > "$archive"
+            if (( $(stat -c '%s' "$archive") >= 2147483648 )); then
+              echo "::error::${archives[$index]} exceeds the GitHub Release asset limit"
+              exit 1
+            fi
+            # Drop the digest reference before pulling another platform on the classic image store.
+            docker image rm "$image" "$source"
+            docker image load --input "$archive"
+            docker image inspect "$image" >/dev/null
+          done
+          (cd "$output" && sha256sum -- "${archives[@]}" > SHA256SUMS)
+
+          commit=$(tag_commit)
+          if [[ -z "$commit" ]]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="$tag_ref" -f sha="$GITHUB_SHA" >/dev/null
+          elif [[ "$commit" != "$GITHUB_SHA" ]]; then
+            echo "::error::Tag $RELEASE_VERSION changed while exporting images"
+            exit 1
+          fi
+
+          if ! gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
+            gh release create "$RELEASE_VERSION" --verify-tag --draft --title "$RELEASE_VERSION" --generate-notes
+          fi
+          if [[ "$(gh release view "$RELEASE_VERSION" --json isDraft --jq .isDraft)" != true ]]; then
+            echo "::error::Release $RELEASE_VERSION was published while exporting images"
+            exit 1
+          fi
+
+          (cd "$output" && gh release upload "$RELEASE_VERSION" --clobber "${assets[@]}")
+          commit=$(tag_commit)
+          if [[ "$commit" != "$GITHUB_SHA" ]]; then
+            echo "::error::Tag $RELEASE_VERSION changed before publication"
+            exit 1
+          fi
+          gh release edit "$RELEASE_VERSION" --draft=false

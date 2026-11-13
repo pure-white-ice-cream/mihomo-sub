@@ -2,16 +2,24 @@
   <img src="assets/logo.svg" width="96" height="96" alt="mihomo-sub Folded Hatch logo">
 </p>
 
-# mihomo-sub
+<h1 align="center">mihomo-sub</h1>
 
-Run an existing proxy subscription on your NAS or home router. The container bundles Mihomo, Zashboard, and Subconverter. It can refresh subscriptions on a schedule and serve converted profiles to other devices on your LAN.
+<p align="center">
+  <a href="README.md">简体中文</a> · <strong>English</strong>
+</p>
 
-[简体中文](README.md)
+<p align="center">
+  <strong>Run an existing proxy subscription on your NAS or home router.</strong><br>
+  The container bundles Mihomo, Zashboard, and Subconverter. It can refresh subscriptions on a schedule and serve converted profiles to other devices on your LAN.
+</p>
 
-[![Docker Build and Publish](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml)
-[![Version](https://img.shields.io/docker/v/purewhiteicecream/mihomo-sub?sort=semver&label=version)](VERSION)
-[![Docker Pulls](https://img.shields.io/docker/pulls/purewhiteicecream/mihomo-sub)](https://hub.docker.com/r/purewhiteicecream/mihomo-sub)
-[![License](https://img.shields.io/github/license/pure-white-ice-cream/mihomo-sub)](LICENSE)
+<p align="center">
+  <a href="https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml"><img src="https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml/badge.svg" alt="Docker Build and Publish"></a>
+  <a href="VERSION"><img src="https://img.shields.io/docker/v/purewhiteicecream/mihomo-sub?sort=semver&amp;label=version" alt="Image Version"></a>
+  <a href="https://hub.docker.com/r/purewhiteicecream/mihomo-sub"><img src="https://img.shields.io/docker/pulls/purewhiteicecream/mihomo-sub" alt="Docker Hub Pulls"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/pure-white-ice-cream/mihomo-sub" alt="License"></a>
+  <a href="https://linux.do/"><img src="https://img.shields.io/badge/Community-LINUX_DO-F0B90B" alt="LINUX DO Community"></a>
+</p>
 
 Includes Mihomo **v1.19.33**, Zashboard **v3.30.0** with system fonts, and Subconverter **v0.9.2**. Images are available for `linux/amd64`, `linux/arm64`, `linux/arm/v7`, and `linux/386`.
 

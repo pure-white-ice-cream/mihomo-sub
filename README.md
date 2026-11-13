@@ -2,16 +2,24 @@
   <img src="assets/logo.svg" width="96" height="96" alt="mihomo-sub 折舱标志">
 </p>
 
-# mihomo-sub
+<h1 align="center">mihomo-sub</h1>
 
-把已有的代理订阅放到 NAS 或软路由上跑。容器内置 Mihomo、Zashboard 和 Subconverter，能定时更新订阅，也能把转换后的订阅提供给局域网里的其他设备。
+<p align="center">
+  <strong>简体中文</strong> · <a href="README.en.md">English</a>
+</p>
 
-[English](README.en.md)
+<p align="center">
+  <strong>把已有的代理订阅放到 NAS 或软路由上跑。</strong><br>
+  容器内置 Mihomo、Zashboard 和 Subconverter，能定时更新订阅，也能把转换后的订阅提供给局域网里的其他设备。
+</p>
 
-[![Docker Build and Publish](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml)
-[![Version](https://img.shields.io/docker/v/purewhiteicecream/mihomo-sub?sort=semver&label=version)](VERSION)
-[![Docker Pulls](https://img.shields.io/docker/pulls/purewhiteicecream/mihomo-sub)](https://hub.docker.com/r/purewhiteicecream/mihomo-sub)
-[![License](https://img.shields.io/github/license/pure-white-ice-cream/mihomo-sub)](LICENSE)
+<p align="center">
+  <a href="https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml"><img src="https://github.com/pure-white-ice-cream/mihomo-sub/actions/workflows/docker-publish.yml/badge.svg" alt="Docker 镜像构建与发布"></a>
+  <a href="VERSION"><img src="https://img.shields.io/docker/v/purewhiteicecream/mihomo-sub?sort=semver&amp;label=version" alt="镜像版本"></a>
+  <a href="https://hub.docker.com/r/purewhiteicecream/mihomo-sub"><img src="https://img.shields.io/docker/pulls/purewhiteicecream/mihomo-sub" alt="Docker Hub 拉取量"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/pure-white-ice-cream/mihomo-sub" alt="许可证"></a>
+  <a href="https://linux.do/"><img src="https://img.shields.io/badge/%E5%8F%8B%E6%83%85%E9%93%BE%E6%8E%A5-LINUX_DO-F0B90B" alt="友情链接：LINUX DO"></a>
+</p>
 
 内置 Mihomo **v1.19.33**、Zashboard **v3.30.0**（系统字体包）和 Subconverter **v0.9.2**。镜像支持 `linux/amd64`、`linux/arm64`、`linux/arm/v7` 和 `linux/386`。
 
